@@ -3,3 +3,5 @@ dist
 .env
 .env.*
 vendor
+public/live
+modelos

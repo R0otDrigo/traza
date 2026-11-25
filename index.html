@@ -3,37 +3,59 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TRAZA · Revisión estructural trazable</title>
+  <title>TRAZA · Verificador E.070 en Revit</title>
 </head>
 <body>
   <header>
-    <div class="brand"><b>TRAZA</b><span>Predimensionamiento y revisión estructural trazable · BIM + IA</span></div>
-    <div id="stats"></div>
+    <div class="brand"><b>TRAZA</b><span>Densidad mínima de muros · Albañilería confinada · RNE E.070</span></div>
+    <span id="doc" class="muted"></span>
+    <span id="ia" class="ia"></span>
     <div class="aviso">Prototipo académico — requiere verificación y firma de un ingeniero colegiado</div>
   </header>
+  <nav class="flujo">
+    <select id="caso" title="Caso de prueba (simulación)"><option value="municipalidad">Municipalidad · Plaza de Armas (simulación)</option><option value="vivienda">Vivienda 4 pisos</option></select>
+    <button id="btnCrear" class="sec" title="Solo para demo: crea un proyecto NUEVO en Revit con el caso elegido">0 · Crear en Revit</button>
+    <button id="btnLeer">1 · Leer modelo de Revit</button>
+    <span class="paso">2 · Aprobar parámetros y roles</span>
+    <input id="notas" placeholder="Notas de arquitectura para la IA (p. ej. 'no tocar la fachada principal')" />
+    <button id="btnVerificar">3 · Verificar y pintar Revit</button>
+    <button id="btnMemoria" class="sec">4 · Memoria</button>
+    <button id="btnGuardar" class="sec" title="Guarda el modelo de Revit">Guardar .rvt</button>
+    <span id="pend" class="pend"></span>
+    <span id="ocupado" class="ocupado"></span>
+  </nav>
   <main>
     <aside class="izq">
       <section>
-        <div class="tit"><h2>1 · Hipótesis</h2><small id="hpend"></small></div>
-        <p class="muted">La IA y los criterios proponen; el ingeniero aprueba. Sin aprobación no se calcula.</p>
-        <button id="aprobarTodas" class="sec">Aprobar todas</button>
-        <ul id="hipotesis"></ul>
+        <h2>Parámetros sísmicos (E.030)</h2>
+        <div class="params">
+          <label>Z <input id="Z" type="number" step="0.05"></label>
+          <label>U <input id="U" type="number" step="0.1"></label>
+          <label>S <input id="S" type="number" step="0.05"></label>
+        </div>
+        <p id="req" class="muted"></p>
+        <button id="aprobarParams" class="sec">Aprobar parámetros</button>
+      </section>
+      <section>
+        <div class="tit"><h2>Clasificación de muros</h2><button id="aceptarTodo" class="sec mini">Aceptar propuesta</button></div>
+        <p class="muted">La IA propone el rol de cada muro; el ingeniero lo confirma o corrige. Sin rol aprobado no se verifica.</p>
+        <div id="muros"></div>
       </section>
     </aside>
-    <div id="visor">
-      <div class="tools">
-        <button id="calcular">2 · Calcular</button>
-        <button id="vista" class="sec">Ver modelo BIM</button>
-        <button id="armar" class="sec">Reproducir armado</button>
-      </div>
-      <div class="leyenda"><span class="cumple">Cumple</span><span class="revisar">Revisar (≥ 0.9)</span><span class="no_cumple">No cumple (&gt; 1)</span></div>
+    <div id="escena">
+      <div class="leyenda"><span class="cuenta">Cuenta</span><span class="no_cuenta">No cuenta</span><span class="tabique">Tabique</span><span class="opcion">Opción simulada</span><span class="desconocido">Sin rol</span></div>
     </div>
     <aside class="der">
-      <section><h2>3 · Traza del cálculo</h2><div id="traza"></div></section>
-      <section><h2>Inconsistencias BIM vs. criterio</h2><ul id="inconsist"></ul></section>
-      <section><h2>Registro de decisiones <small id="nlog">0</small></h2><ul id="log"></ul></section>
+      <section><h2>Densidad por nivel <small>(en vivo)</small></h2><div id="barras"></div></section>
+      <section>
+        <div class="tit"><h2>Opciones de refuerzo</h2><span><button id="simPlan" class="sec mini">Simular plan mínimo</button> <button id="simNada" class="sec mini">Limpiar</button></span></div>
+        <p id="resumen"></p>
+        <ul id="opciones"></ul>
+      </section>
+      <section><h2>Muro seleccionado</h2><div id="detalle"></div></section>
+      <section><h2>Registro de decisiones</h2><ul id="log"></ul></section>
     </aside>
   </main>
-  <script type="module" src="/src/main.ts"></script>
+  <script type="module" src="/src/app/e070.ts"></script>
 </body>
 </html>
