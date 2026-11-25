@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TRAZA · Revisión estructural trazable</title>
+</head>
+<body>
+  <header>
+    <div class="brand"><b>TRAZA</b><span>Predimensionamiento y revisión estructural trazable · BIM + IA</span></div>
+    <div id="stats"></div>
+    <div class="aviso">Prototipo académico — requiere verificación y firma de un ingeniero colegiado</div>
+  </header>
+  <main>
+    <aside class="izq">
+      <section>
+        <div class="tit"><h2>1 · Hipótesis</h2><small id="hpend"></small></div>
+        <p class="muted">La IA y los criterios proponen; el ingeniero aprueba. Sin aprobación no se calcula.</p>
+        <button id="aprobarTodas" class="sec">Aprobar todas</button>
+        <ul id="hipotesis"></ul>
+      </section>
+    </aside>
+    <div id="visor">
+      <div class="tools">
+        <button id="calcular">2 · Calcular</button>
+        <button id="vista" class="sec">Ver modelo BIM</button>
+        <button id="armar" class="sec">Reproducir armado</button>
+      </div>
+      <div class="leyenda"><span class="cumple">Cumple</span><span class="revisar">Revisar (≥ 0.9)</span><span class="no_cumple">No cumple (&gt; 1)</span></div>
+    </div>
+    <aside class="der">
+      <section><h2>3 · Traza del cálculo</h2><div id="traza"></div></section>
+      <section><h2>Inconsistencias BIM vs. criterio</h2><ul id="inconsist"></ul></section>
+      <section><h2>Registro de decisiones <small id="nlog">0</small></h2><ul id="log"></ul></section>
+    </aside>
+  </main>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
