@@ -1,0 +1,117 @@
+/* === Ciudad Blanca: sillar, azul Santa Catalina, terracota, noche andina === */
+:root {
+  --noche: #111A27; --noche2: #1B2638; --sillar: #EFEAE1; --sillar2: #E2DACB; --tarjeta: #F8F5EF; --linea: #D6CCBA;
+  --tinta: #18202C; --suave: #4F5562; --suaveosc: #CDD5E0;
+  --azul: #2F55D4; --azulclaro: #9DB4FF; --terracota: #B4472A; --terracotaclara: #F2915F;
+}
+body { font-family: 'Manrope', Verdana, sans-serif; color: var(--tinta); }
+section { padding: 128px; box-sizing: border-box; display: flex; flex-direction: column; }
+h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; margin: 0; }
+p { margin: 0; }
+
+section.noche { background: var(--noche); color: var(--sillar); }
+section.sillar { background: var(--sillar); color: var(--tinta); }
+
+/* --- Tipografía común --- */
+.ceja { font-size: 24px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 20px; }
+.noche .ceja { color: var(--terracotaclara); }
+.sillar .ceja { color: var(--terracota); }
+.titulo { font-size: 72px; line-height: 1.08; letter-spacing: -1px; }
+.pie { position: absolute; left: 128px; bottom: 56px; width: 1664px; display: flex; justify-content: space-between; gap: 40px; }
+.pie p { font-size: 24px; }
+.noche .pie p { color: var(--suaveosc); }
+.sillar .pie p { color: var(--suave); }
+
+/* --- Fotos de fondo con velo --- */
+.foto { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+.velo { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+.entra { animation: entra 700ms cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i) * 140ms); }
+
+/* === Portada === */
+.portada { justify-content: center; }
+.portada .foto { animation: acerca 6s ease-out both; }
+.portada .velo { background: linear-gradient(90deg, rgba(17,26,39,.94) 0%, rgba(17,26,39,.82) 42%, rgba(17,26,39,.15) 78%); }
+.portada .bloque { width: 980px; }
+.portada .marca { font-size: 220px; line-height: .95; letter-spacing: -4px; color: var(--sillar); font-weight: 700; }
+.portada .lema { font-size: 40px; line-height: 1.3; margin-top: 36px; color: var(--sillar); }
+.portada .equipo { margin-top: 44px; font-size: 26px; line-height: 1.45; color: var(--suaveosc); }
+
+/* === Equipo === */
+.equipo-slide { padding: 128px 128px 128px 760px; }
+.equipo-slide .foto { width: 640px; }
+.equipo-slide .credito { position: absolute; left: 0; bottom: 0; width: 640px; box-sizing: border-box; padding: 18px 24px; background: rgba(17,26,39,.7); }
+.equipo-slide .credito p { font-size: 24px; color: var(--sillar); }
+.equipo-slide .sub { font-size: 32px; line-height: 1.35; color: var(--suave); margin-top: 16px; }
+.personas { display: flex; flex-direction: column; gap: 24px; margin-top: 56px; }
+.persona { display: flex; gap: 32px; align-items: center; background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 24px; padding: 28px 36px; }
+.persona .inicial { width: 104px; height: 104px; min-width: 104px; border-radius: 52px; display: flex; align-items: center; justify-content: center; }
+.persona .avatar { width: 104px; height: 104px; min-width: 104px; border-radius: 52px; object-fit: cover; border: 3px solid var(--sillar2); }
+.persona .inicial p { font-family: 'Fraunces', Georgia, serif; font-size: 40px; font-weight: 600; color: var(--sillar); }
+.persona .datos { display: flex; flex-direction: column; gap: 6px; }
+.persona .nombre { font-size: 36px; line-height: 1.15; }
+.persona .carrera { font-size: 24px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--terracota); }
+.persona .rol { font-size: 26px; line-height: 1.35; color: var(--suave); }
+
+/* === Problema === */
+.problema .velo { background: linear-gradient(180deg, rgba(17,26,39,.80) 0%, rgba(17,26,39,.90) 55%, rgba(17,26,39,.96) 100%); }
+.problema .frase { font-size: 76px; line-height: 1.08; letter-spacing: -1px; width: 1560px; color: var(--sillar); }
+.formula { margin-top: 48px; align-self: flex-start; font-size: 30px; font-weight: 600; padding: 18px 30px; border-radius: 14px; background: rgba(239,234,225,.12); border: 1px solid rgba(239,234,225,.25); color: var(--sillar); }
+.tres { display: flex; gap: 36px; margin-top: 48px; }
+.dificultad { flex: 1; border-top: 4px solid var(--terracotaclara); padding-top: 22px; }
+.dificultad h3 { font-size: 32px; line-height: 1.15; color: var(--sillar); margin-bottom: 10px; }
+.dificultad p { font-size: 26px; line-height: 1.4; color: var(--suaveosc); }
+
+/* === Solución: flujo con decisión del ingeniero === */
+.diagrama { position: relative; width: 1664px; height: 490px; margin-top: 40px; }
+.paso { position: absolute; top: 45px; width: 236px; height: 270px; box-sizing: border-box; background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 22px; padding: 22px 22px; display: flex; flex-direction: column; gap: 8px; }
+.paso .num { font-family: 'Fraunces', Georgia, serif; font-size: 40px; font-weight: 700; line-height: 1; color: var(--terracota); }
+.paso h3 { font-size: 28px; line-height: 1.12; }
+.paso.suelo { border: 2px dashed var(--azul); }
+.paso.suelo .num { color: var(--azul); }
+.paso p { font-size: 24px; line-height: 1.35; color: var(--suave); }
+.paso.ia { border-top: 8px solid var(--terracota); }
+.paso.motor { background: var(--noche); border: 1px solid var(--noche); }
+.paso.motor h3 { color: var(--sillar); }
+.paso.motor p { color: var(--suaveosc); }
+.paso.motor .num { color: var(--terracotaclara); }
+.rombo { position: absolute; left: 864px; top: 70px; width: 220px; height: 220px; background: var(--azul); }
+.pregunta { position: absolute; left: 909px; top: 138px; width: 130px; font-family: 'Fraunces', Georgia, serif; font-size: 24px; font-weight: 600; line-height: 1.15; text-align: center; color: var(--sillar); }
+.etq { position: absolute; font-size: 24px; font-weight: 700; padding: 4px 16px; border-radius: 999px; }
+.etq.si { left: 1072px; top: 118px; background: var(--azul); color: var(--sillar); }
+.arcos { position: absolute; left: 0; top: 900px; width: 1920px; height: 180px; }
+.etq.no { left: 992px; top: 300px; background: var(--terracota); color: var(--sillar); }
+.corrige { position: absolute; left: 784px; top: 364px; width: 380px; box-sizing: border-box; padding: 18px 24px; border-radius: 18px; border: 2px dashed var(--terracota); background: var(--tarjeta); }
+.corrige p { font-size: 24px; line-height: 1.35; color: var(--tinta); }
+.flecha { color: var(--tinta); border-width: 3px; }
+.flecha.no { color: var(--terracota); border-style: dashed; }
+.reglas { display: flex; gap: 20px; margin-top: 28px; }
+.regla { font-size: 28px; font-weight: 700; padding: 12px 24px; border-radius: 999px; }
+.regla.ia { background: rgba(180,71,42,.12); color: var(--terracota); }
+.regla.motor { background: var(--noche); color: var(--sillar); }
+.regla.ing { background: var(--azul); color: var(--sillar); }
+
+/* === BIM e IA === */
+.bimia .velo { background: linear-gradient(180deg, rgba(17,26,39,.72) 0%, rgba(17,26,39,.86) 60%, rgba(17,26,39,.94) 100%); }
+.dos { display: flex; gap: 40px; margin-top: 40px; }
+.panel li.idea { color: var(--terracotaclara); }
+.panel li.idea b { color: var(--sillar); }
+.panel { flex: 1; background: rgba(17,26,39,.62); backdrop-filter: blur(16px); border: 1px solid rgba(239,234,225,.18); border-radius: 26px; padding: 44px 48px; display: flex; flex-direction: column; gap: 18px; }
+.panel.bim { border-top: 8px solid var(--azulclaro); }
+.panel.ia { border-top: 8px solid var(--terracotaclara); }
+.panel h3 { font-size: 44px; color: var(--sillar); }
+.panel ul { margin: 0; padding-left: 34px; }
+.panel li { font-size: 26px; line-height: 1.42; color: var(--suaveosc); margin-bottom: 10px; }
+.garantia { margin-top: 28px; font-size: 30px; line-height: 1.4; color: var(--sillar); }
+.garantia b { color: var(--terracotaclara); }
+
+/* === Resultado === */
+.mejoras { display: flex; gap: 40px; margin-top: 52px; }
+.mejora { flex: 1; background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 26px; padding: 40px; display: flex; flex-direction: column; gap: 16px; }
+.chip { width: 80px; height: 80px; border-radius: 40px; display: flex; align-items: center; justify-content: center; }
+.chip x-icon { width: 44px; height: 44px; color: var(--sillar); }
+.mejora h3 { font-size: 34px; line-height: 1.15; }
+.mejora p { font-size: 25px; line-height: 1.42; color: var(--suave); }
+.mejora .proxima { font-size: 24px; line-height: 1.35; color: var(--azul); font-weight: 700; }
+
+@keyframes entra { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes acerca { from { transform: scale(1.08); } to { transform: scale(1); } }
