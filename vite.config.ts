@@ -15,6 +15,7 @@ function nexobimApi(): Plugin {
       server = s;
       s.middlewares.use('/api', async (req, res) => {
         const P = await server.ssrLoadModule('/src/pipeline.ts');
+        const A = await server.ssrLoadModule('/src/api/index.ts'); // carga los módulos (arranca el vigilante) desde el primer pedido
         const ruta = (req.url ?? '').split('?')[0].replace(/^\//, '');
         const enviar = (code: number, data: unknown, tipo = 'application/json') => { res.statusCode = code; res.setHeader('Content-Type', tipo); res.end(tipo === 'application/json' ? JSON.stringify(data) : data); };
         try {
@@ -32,7 +33,6 @@ function nexobimApi(): Plugin {
             aplicar: () => P.aplicarOpcion(b.opcionId),
           };
           // Rutas de los módulos (suelo, bim, vigilante): src/api/*.ts
-          const A = await server.ssrLoadModule('/src/api/index.ts');
           const def = A.rutas[`${req.method} ${ruta}`];
           if (def) {
             const ctx = { query: new URL(req.url ?? '', 'http://x').searchParams, req, res };
