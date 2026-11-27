@@ -3,6 +3,8 @@ import * as P from '../src/pipeline.ts';
 import { cerrar } from '../src/revit/bridge.ts';
 
 const [, , cmd, ...a] = process.argv;
+// suelo:buscar | suelo:descargar | suelo:indexar | suelo:asistido | suelo:manual | suelo:cercanos | suelo:estado (ver docs/FUENTES.md)
+if (cmd?.startsWith('suelo:')) { await (await import('../src/fuentes/cli.ts')).suelo(cmd, a); process.exit(0); }
 try {
   let e: P.Estado;
   switch (cmd) {

@@ -1,0 +1,24 @@
+{
+  "_nota": "Nombres exactos del diálogo 'Buscar Entidad' del Buscador Público del SEACE, confirmados el 27/11/2026. Filtros: objeto = Obra, años 2018-2026.",
+  "filtros": { "objeto": "Obra", "anios": [2018, 2026] },
+  "entidades": [
+    { "nombre": "MUNICIPALIDAD PROVINCIAL DE AREQUIPA", "ruc": "20154489895", "distrito": "AREQUIPA" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE LA VILLA DE CAYMA", "ruc": "20121103754", "distrito": "CAYMA" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE YANAHUARA", "ruc": "20162586956", "distrito": "YANAHUARA" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE CERRO COLORADO", "ruc": "20159515240", "distrito": "CERRO COLORADO" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE JOSE LUIS BUSTAMANTE Y RIVERO", "ruc": "20312108284", "distrito": "JOSE LUIS BUSTAMANTE Y RIVERO" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE PAUCARPATA", "ruc": "20167264868", "distrito": "PAUCARPATA" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE SACHACA", "ruc": "20190583369", "distrito": "SACHACA" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE SOCABAYA", "ruc": "20190520286", "distrito": "SOCABAYA" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE MARIANO MELGAR", "ruc": "20170422971", "distrito": "MARIANO MELGAR" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE MIRAFLORES - AREQUIPA", "ruc": "20163611512", "distrito": "MIRAFLORES" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE ALTO SELVA ALEGRE", "ruc": "20311886879", "distrito": "ALTO SELVA ALEGRE" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE JACOBO HUNTER", "ruc": "20168918942", "distrito": "JACOBO HUNTER" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE TIABAYA", "ruc": "20171312222", "distrito": "TIABAYA" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE CHARACATO", "ruc": "20184516111", "distrito": "CHARACATO" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE SABANDIA", "ruc": "20170573081", "distrito": "SABANDIA" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE MOLLEBAYA", "ruc": "20219316675", "distrito": "MOLLEBAYA" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE YURA", "ruc": "20173809663", "distrito": "YURA" },
+    { "nombre": "MUNICIPALIDAD DISTRITAL DE UCHUMAYO", "ruc": "20191603941", "distrito": "UCHUMAYO" }
+  ]
+}
