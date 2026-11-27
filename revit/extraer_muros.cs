@@ -1,4 +1,4 @@
-// TRAZA · Extrae muros, vanos, niveles y área techada del modelo abierto (solo lectura).
+// NexoBIM · Extrae muros, vanos, niveles y área techada del modelo abierto (solo lectura).
 // Se ejecuta dentro de Revit vía rvt-mcp (revit_send_code_to_revit). Devuelve JSON en metros.
 using System;
 using System.Linq;

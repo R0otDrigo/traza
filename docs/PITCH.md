@@ -1,4 +1,4 @@
-# Pitch NexoBim · 2 min 50 s · por diapositiva
+# Pitch NexoBIM · 2 min 50 s · por diapositiva
 
 Presentan Rodrigo y José. Unas 430 palabras a ritmo normal de exposición; los tiempos son una guía. Cada bloque también está en las notas del orador de su diapositiva.
 
@@ -15,7 +15,7 @@ Presentan Rodrigo y José. Unas 430 palabras a ritmo normal de exposición; los 
 
 ## 1 · Portada · Rodrigo (0:00 – 0:07)
 
-Buenas tardes. Somos NexoBim, un copiloto sísmico para Revit.
+Buenas tardes. Somos NexoBIM, un copiloto sísmico para Revit.
 
 ## 2 · Equipo · Rodrigo (0:07 – 0:22)
 
@@ -29,7 +29,7 @@ La fórmula es corta. Lo que toma tiempo es decidir qué muro es portante, desco
 
 ## 4 · La solución · Rodrigo (1:00 – 1:45)
 
-Empezamos por el suelo: la idea es que la IA busque obras públicas cercanas en el portal del OSCE y tome de sus estudios un perfil de suelo referencial; esa parte está en desarrollo. Luego NexoBim lee el diseño en Revit: los muros, los vanos, los niveles y el área de cada losa.
+Empezamos por el suelo: la idea es que la IA busque obras públicas cercanas en el portal SEACE del OECE (antes OSCE) y tome de sus estudios un perfil de suelo referencial; esa parte está en desarrollo. Luego NexoBIM lee el diseño en Revit: los muros, los vanos, los niveles y el área de cada losa.
 
 La IA propone qué muros son portantes y explica por qué. Después la propuesta va al ingeniero, que responde sí o no. Si dice que no, corrige los roles o los parámetros sísmicos y lo vuelve a enviar; si dice que sí, recién se calcula.
 

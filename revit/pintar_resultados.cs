@@ -1,4 +1,4 @@
-// TRAZA · Pinta en la vista 3D "TRAZA E.070":
+// NexoBIM · Pinta en la vista 3D "NexoBIM E.070":
 //  - muros según el motor (cuenta / no cuenta / tabique / opción propuesta) + parámetro Comentarios
 //  - losas de cada nivel según cumpla o no la densidad (semitransparentes)
 // data = { muros: { "<ElementId>": { estado, texto } }, niveles: { "<nombre nivel>": "cumple"|"no_cumple" }, limpiar?: bool }
@@ -37,13 +37,13 @@ public static class McpDynamicScript
         }
         View3D vista;
         int n = 0;
-        using (var t = new Transaction(doc, "TRAZA · Pintar verificación E.070"))
+        using (var t = new Transaction(doc, "NexoBIM · Pintar verificación E.070"))
         {
             t.Start();
             var vft3d = new FilteredElementCollector(doc).OfClass(typeof(ViewFamilyType)).Cast<ViewFamilyType>().First(v => v.ViewFamily == ViewFamily.ThreeDimensional);
-            vista = new FilteredElementCollector(doc).OfClass(typeof(View3D)).Cast<View3D>().FirstOrDefault(v => v.Name == "TRAZA E.070" && !v.IsTemplate)
+            vista = new FilteredElementCollector(doc).OfClass(typeof(View3D)).Cast<View3D>().FirstOrDefault(v => (v.Name == "NexoBIM E.070" || v.Name == "TRAZA E.070") && !v.IsTemplate)
                     ?? View3D.CreateIsometric(doc, vft3d.Id);
-            if (vista.Name != "TRAZA E.070") vista.Name = "TRAZA E.070";
+            if (vista.Name != "NexoBIM E.070") vista.Name = "NexoBIM E.070";
             vista.DisplayStyle = DisplayStyle.ShadingWithEdges;
             vista.DetailLevel = ViewDetailLevel.Fine;
             // Vista limpia: sin niveles, ejes, marcas de alzado ni secciones.
@@ -74,6 +74,6 @@ public static class McpDynamicScript
         }
         uidoc.ActiveView = vista;
         uidoc.GetOpenUIViews().FirstOrDefault(v => v.ViewId == vista.Id)?.ZoomToFit();
-        return $"{n} muros pintados en la vista 'TRAZA E.070'.";
+        return $"{n} muros pintados en la vista 'NexoBIM E.070'.";
     }
 }

@@ -1,4 +1,4 @@
-# TRAZA — Verificador de densidad de muros E.070 dentro de Revit (BIM + IA)
+# NexoBIM — Verificador de densidad de muros E.070 dentro de Revit (BIM + IA)
 
 **Hackathon BIM + IA UNSA 2026 · Reto 2: IA para el cálculo estructural**
 Jornada: sábado 28/11/2026, 08:00–19:00, Hub JAKU Emprende UNSA (presencial)
@@ -9,7 +9,7 @@ Jornada: sábado 28/11/2026, 08:00–19:00, Hub JAKU Emprende UNSA (presencial)
 
 ## 1. La idea en un párrafo
 
-En Perú, la mayoría de viviendas y colegios de hasta 4 pisos son de **albañilería confinada**, y cada vez que arquitectura mueve una puerta o una ventana alguien tiene que volver a verificar a mano si quedan suficientes muros portantes en X y en Y (densidad mínima, **RNE E.070 Art. 19.2.b**: Σ L·t / Ap ≥ Z·U·S·N / 56). **TRAZA** hace esa revisión **dentro de Revit** y la deja trazable:
+En Perú, la mayoría de viviendas y colegios de hasta 4 pisos son de **albañilería confinada**, y cada vez que arquitectura mueve una puerta o una ventana alguien tiene que volver a verificar a mano si quedan suficientes muros portantes en X y en Y (densidad mínima, **RNE E.070 Art. 19.2.b**: Σ L·t / Ap ≥ Z·U·S·N / 56). **NexoBIM** hace esa revisión **dentro de Revit** y la deja trazable:
 1. Lee los muros, los vanos, los niveles y el área techada del modelo real.
 2. Una **IA (Claude)** propone qué muros son portantes y cuáles son tabiques, y el **ingeniero aprueba** esa clasificación y los parámetros Z, U y S.
 3. Un **motor determinista** calcula la densidad tramo por tramo: los vanos parten el muro, no cuentan los tramos menores de 1.20 m ni los espesores menores de h/20, y se revisa la continuidad vertical.
@@ -23,7 +23,7 @@ Todo queda en un **registro de decisiones** y en una **memoria preliminar** list
 
 ## 2. Qué pide el reto y cómo lo cumplimos
 
-| Resultado sugerido por el reto | Cómo lo cumple TRAZA |
+| Resultado sugerido por el reto | Cómo lo cumple NexoBIM |
 |---|---|
 | Lectura y organización de parámetros geométricos, cargas o datos estructurales | `revit/extraer_muros.cs` lee del modelo vivo los muros (eje, espesor, altura, tipo, material, bandera estructural), los vanos (puertas, ventanas y huecos) y el área de losas por nivel. |
 | Automatización del predimensionamiento, el cálculo elemental, la revisión o las memorias | El motor E.070 calcula Σ L·t por nivel y dirección y genera opciones con su aporte. La memoria se genera sola. |
@@ -77,7 +77,7 @@ Todo queda en un **registro de decisiones** y en una **memoria preliminar** list
                               │
               ┌───────────────┴────────────────┐
               ▼                                ▼
-   Panel web (Vite, :5173)              Servidor MCP "traza" (mcp/traza-server.ts)
+   Panel web (Vite, :5173)              Servidor MCP "nexobim" (mcp/nexobim-server.ts)
    3D + barras + simulación             El ingeniero conversa con Claude, que
    + aprobaciones + aplicar             usa herramientas verificables
 ```
@@ -95,7 +95,7 @@ Todo queda en un **registro de decisiones** y en una **memoria preliminar** list
 | `src/pipeline.ts` | Flujo, aprobaciones y registro de decisiones (`public/live/estado.json`) |
 | `index.html` + `src/app/*` | Panel de control 3D |
 | `src/report/memoria.ts` | Memoria preliminar imprimible |
-| `mcp/traza-server.ts` + `.claude/skills/traza-e070` | Agente conversacional |
+| `mcp/nexobim-server.ts` + `.claude/skills/nexobim-e070` | Agente conversacional |
 | `porticos.html` | Concepto anterior (pórticos de concreto), queda como "módulo 2" |
 
 ---
@@ -104,7 +104,7 @@ Todo queda en un **registro de decisiones** y en una **memoria preliminar** list
 Planta **simulada** inspirada en el Palacio Municipal del Portal Municipal. **No es el plano real ni su sistema estructural real** (los edificios históricos de la plaza son de sillar sin confinar, y la E.070 no les aplica tal cual). Es un edificio de albañilería confinada con esa organización espacial, pensado para mostrar problemas reales de los edificios con portales:
 - **Geometría:** frente de 30 m hacia la plaza, portal de 8 arcos de 3 m, galería de 4 m, patio central de 12 × 8 m, 3 pisos de 3.0 m. Ap = 30·24 − 12·8 = 624 m².
 - **Parámetros propuestos (los aprueba el ingeniero):** Z = 0.35, U = 1.5 (sede de gobierno, categoría A2: **verificar**), S = 1.0 (grava, S1: verificar con EMS). Requerido = 0.028125, es decir Σ L·t ≥ 17.55 m² por dirección.
-- **Lo que detecta TRAZA:**
+- **Lo que detecta NexoBIM:**
   1. Los 9 pilares del portal miden 0.67 m, menos de 1.20 m, así que **no cuentan**.
   2. La fachada de los pisos 2 y 3 se apoya sobre los arcos, así que **no tiene continuidad vertical**.
   3. Los muros interiores de soga (13 cm) con h = 3.0 m tienen **t < h/20 = 0.15 m**.
@@ -123,7 +123,7 @@ Problemas que incluye, todos típicos de obra:
 2. **Un muro de 1.0 m** que no cuenta, porque es menor de 1.20 m.
 3. **Pisos 3 y 4:** arquitectura movió el muro interior del eje 6 al eje 7, así que no tiene continuidad vertical y no cuenta.
 
-**Solución mínima que propone TRAZA:**
+**Solución mínima que propone NexoBIM:**
 - **Piso 1:** convertir el tabique del eje 11 (+1.04 m²) y engrosar el muro interior a 23 cm (+0.71 m²). Resultado: 3.713 m², cumple.
 - **Pisos 3 y 4:** además, **devolver el muro al eje 6** (+0.923 m²).
 
@@ -137,7 +137,7 @@ Problemas que incluye, todos típicos de obra:
 5. **"Simular plan mínimo":** las barras se ponen en verde al instante, sin tocar Revit.
 6. **"Aplicar en Revit"** sobre dos opciones: el modelo cambia (tipo de muro y posición), se vuelve a verificar y el registro muestra quién hizo qué.
 7. **Memoria:** se abre el PDF con la fórmula sustituida, los motivos de exclusión y la línea de firma del ingeniero.
-8. **Opcional, el efecto "wow":** en Claude Code se escribe *"¿cumple el edificio? propón el refuerzo de menor impacto, sin tocar la fachada"* y el agente usa las herramientas `traza_*`.
+8. **Opcional, el efecto "wow":** en Claude Code se escribe *"¿cumple el edificio? propón el refuerzo de menor impacto, sin tocar la fachada"* y el agente usa las herramientas `nexobim_*`.
 
 Plan B: video grabado de la demo y `estado.json` guardado, para que el panel funcione sin Revit.
 
@@ -166,7 +166,7 @@ Plan B: video grabado de la demo y `estado.json` guardado, para que el panel fun
 npm install
 npm test                 # motor E.070 (19 tests)
 npm run dev              # panel en http://localhost:5173
-node scripts/traza.ts leer | params 0.35 1 1.15 | aceptar | verificar | aplicar <id>   # CLI
+node scripts/nexobim.ts leer | params 0.35 1 1.15 | aceptar | verificar | aplicar <id>   # CLI
 node scripts/compilar-cs.ts   # compila los scripts C# dentro de Revit (sin ejecutar)
 ```
 En Revit: abrir un proyecto, ir a Complementos → RvtMcp → iniciar. Para la demo, en un proyecto vacío, pulsar "0 · Crear caso de prueba".
@@ -188,7 +188,7 @@ Después se probó el **agente MCP** contra el mismo modelo: leyó, verificó y 
 ### Notas de operación
 - Revit atiende **a un cliente a la vez** (el panel, la CLI o el agente MCP). Al cerrar uno, el siguiente debe esperar ~1 min.
 - Si Revit tiene un comando activo (por ejemplo "Colocar muro") o un diálogo abierto, no acepta órdenes: hay que presionar Esc.
-- Con dos Revit abiertos, TRAZA usa el que tiene un proyecto abierto. Para forzar uno, ejecuta `$env:TRAZA_REVIT_PID = "<pid>"` antes de `npm run dev`.
+- Con dos Revit abiertos, NexoBIM usa el que tiene un proyecto abierto. Para forzar uno, ejecuta `$env:NEXOBIM_REVIT_PID = "<pid>"` antes de `npm run dev`.
 - La primera vez se crea `modelos/_base-vacio.rvt` (tarda ~1 min). Después, cada caso nuevo se crea en segundos.
 
 ## 8. Siguientes pasos (para el 28/11)

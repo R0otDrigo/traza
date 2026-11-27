@@ -1,4 +1,4 @@
-// Orquestador TRAZA E.070 (Node). Lo usan el panel web (vía Vite) y el servidor MCP.
+// Orquestador NexoBIM E.070 (Node). Lo usan el panel web (vía Vite) y el servidor MCP.
 // Revit → extraer → IA clasifica → ingeniero aprueba → motor determinista → IA explica → Revit (colores + comentarios)
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -104,7 +104,7 @@ export async function verificarYPintar(notasArquitectura = '') {
   e.plan = Object.fromEntries(Object.entries(plan).map(([k, ops]) => [k, ops.map(o => o.id)]));
   log(e, e.explicacion.fuente === 'IA' ? 'IA' : 'motor', 'Propuso opciones', e.explicacion.resumen);
   await revit.pintar(e.resultado, Object.values(plan).flat());
-  log(e, 'revit', 'Pintó resultados', 'Vista 3D "TRAZA E.070" y parámetro Comentarios');
+  log(e, 'revit', 'Pintó resultados', 'Vista 3D "NexoBIM E.070" y parámetro Comentarios');
   return guardar(e);
 }
 

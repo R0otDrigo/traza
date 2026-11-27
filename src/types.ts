@@ -1,4 +1,4 @@
-// Contratos de datos de TRAZA. Unidades: m, kg, kg/m², kg/cm², cm².
+// Contratos de datos de NexoBIM. Unidades: m, kg, kg/m², kg/cm², cm².
 
 export type TipoElemento = 'columna' | 'viga' | 'losa';
 export type Estado = 'cumple' | 'revisar' | 'no_cumple';

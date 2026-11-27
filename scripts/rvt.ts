@@ -6,15 +6,15 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 const EXE = `${process.env.LOCALAPPDATA}\\Bimwright\\rvt-mcp\\server\\current\\rvt-mcp.exe`;
 
 export async function conectar() {
-  const c = new Client({ name: 'traza', version: '0.2.0' });
+  const c = new Client({ name: 'nexobim', version: '0.2.0' });
   await c.connect(new StdioClientTransport({ command: EXE, args: [], stderr: 'ignore' }));
   await fijarInstancia(c);
   return c;
 }
 
-/** rvt-mcp exige confirmar la instancia antes de escribir. Preferimos TRAZA_REVIT_PID, luego una instancia con proyecto abierto. */
+/** rvt-mcp exige confirmar la instancia antes de escribir. Preferimos NEXOBIM_REVIT_PID, luego una instancia con proyecto abierto. */
 export async function fijarInstancia(c: Client) {
-  let version = process.env.TRAZA_REVIT_PID ? `pid:${process.env.TRAZA_REVIT_PID}` : 'auto';
+  let version = (process.env.NEXOBIM_REVIT_PID ?? process.env.TRAZA_REVIT_PID) ? `pid:${process.env.NEXOBIM_REVIT_PID ?? process.env.TRAZA_REVIT_PID}` : 'auto';
   if (version === 'auto') {
     try {
       const t = JSON.parse(await llamar(c, 'revit_list_available_targets')).targets as { pid: number; window_title: string }[];

@@ -138,7 +138,7 @@ function pintarDetalle(p: Proyecto, r: Resultado) {
 
 $('#btnCrear').onclick = () => {
   const caso = $<HTMLSelectElement>('#caso').value;
-  if (confirm(`Se creará un proyecto NUEVO en Revit (en la carpeta modelos/) con el caso "${caso}" y se reiniciará el registro de TRAZA. El proyecto abierto no se modifica. ¿Continuar?`)) { sel = null; accion('crear', { caso }, 'Creando proyecto y construyendo el modelo en Revit…'); }
+  if (confirm(`Se creará un proyecto NUEVO en Revit (en la carpeta modelos/) con el caso "${caso}" y se reiniciará el registro de NexoBIM. El proyecto abierto no se modifica. ¿Continuar?`)) { sel = null; accion('crear', { caso }, 'Creando proyecto y construyendo el modelo en Revit…'); }
 };
 $('#btnGuardar').onclick = () => accion('guardar', {}, 'Guardando modelo…');
 $('#btnLeer').onclick = () => accion('leer', {}, 'Leyendo Revit y clasificando muros…');

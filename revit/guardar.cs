@@ -1,4 +1,4 @@
-// TRAZA · Guarda el documento activo (para que el ingeniero conserve el modelo verificado).
+// NexoBIM · Guarda el documento activo (para que el ingeniero conserve el modelo verificado).
 using System;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;

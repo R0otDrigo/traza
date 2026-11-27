@@ -1,4 +1,4 @@
-// IA de TRAZA: clasifica muros y ordena/explica opciones. NUNCA calcula densidades.
+// IA de NexoBIM: clasifica muros y ordena/explica opciones. NUNCA calcula densidades.
 // Sin credenciales (o si el modelo declina) usa reglas deterministas y lo declara en `fuente`.
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';

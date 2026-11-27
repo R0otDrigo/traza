@@ -1,4 +1,4 @@
-// TRAZA · Crea un proyecto nuevo (plantilla por defecto de Revit) y lo guarda en data.ruta.
+// NexoBIM · Crea un proyecto nuevo (plantilla por defecto de Revit) y lo guarda en data.ruta.
 // Luego se abre con revit_open_model. No toca ningún documento abierto.
 using System;
 using System.IO;

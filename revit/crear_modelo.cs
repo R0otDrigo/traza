@@ -1,4 +1,4 @@
-// TRAZA · Construye en el modelo ABIERTO (proyecto nuevo y vacío) la vivienda de prueba
+// NexoBIM · Construye en el modelo ABIERTO (proyecto nuevo y vacío) la vivienda de prueba
 // a partir del mismo JSON que usan los tests (src/e070/caso.ts). Todo queda en el Undo de Revit.
 // data = { niveles:[{nombre, elevacion, area}], muros:[{id, nivel, x1,y1,x2,y2, t, h, rol, tipoRevit, aberturas:[{offset, ancho, tipo}]}], alturaPiso, losa:{exterior:[[x,y]], huecos:[[[x,y]]]} }
 using System;
@@ -21,7 +21,7 @@ public static class McpDynamicScript
         var log = new List<string>();
         View3D vista = null;
 
-        using (var t = new Transaction(doc, "TRAZA · Crear vivienda de prueba"))
+        using (var t = new Transaction(doc, "NexoBIM · Crear vivienda de prueba"))
         {
             t.Start();
 
@@ -33,7 +33,7 @@ public static class McpDynamicScript
             {
                 var lv = k < existentes.Count ? existentes[k] : Level.Create(doc, F(k * hPiso));
                 lv.Elevation = F(k * hPiso);
-                try { lv.Name = nombres[k]; } catch { lv.Name = nombres[k] + " (TRAZA)"; }
+                try { lv.Name = nombres[k]; } catch { lv.Name = nombres[k] + " (NexoBIM)"; }
                 niveles[nombres[k]] = lv;
             }
             // Vistas de planta para los niveles nuevos
@@ -99,15 +99,15 @@ public static class McpDynamicScript
 
             // Vista 3D de trabajo
             var vft3d = new FilteredElementCollector(doc).OfClass(typeof(ViewFamilyType)).Cast<ViewFamilyType>().First(v => v.ViewFamily == ViewFamily.ThreeDimensional);
-            vista = new FilteredElementCollector(doc).OfClass(typeof(View3D)).Cast<View3D>().FirstOrDefault(v => v.Name == "TRAZA E.070")
+            vista = new FilteredElementCollector(doc).OfClass(typeof(View3D)).Cast<View3D>().FirstOrDefault(v => (v.Name == "NexoBIM E.070" || v.Name == "TRAZA E.070"))
                     ?? View3D.CreateIsometric(doc, vft3d.Id);
-            if (vista.Name != "TRAZA E.070") vista.Name = "TRAZA E.070";
+            if (vista.Name != "NexoBIM E.070") vista.Name = "NexoBIM E.070";
             vista.DisplayStyle = DisplayStyle.ShadingWithEdges;
             vista.DetailLevel = ViewDetailLevel.Fine;
 
             t.Commit();
         }
         uidoc.ActiveView = vista;
-        return $"Modelo creado: {data["muros"].Count()} muros, {data["niveles"].Count()} niveles + techo. Vista 'TRAZA E.070' activa.";
+        return $"Modelo creado: {data["muros"].Count()} muros, {data["niveles"].Count()} niveles + techo. Vista 'NexoBIM E.070' activa.";
     }
 }

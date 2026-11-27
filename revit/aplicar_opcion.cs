@@ -1,4 +1,4 @@
-// TRAZA · Aplica en Revit una opción aprobada por el ingeniero:
+// NexoBIM · Aplica en Revit una opción aprobada por el ingeniero:
 //  - convertir_tabique:   cambia el muro a un tipo portante y lo marca estructural.
 //  - aumentar_espesor:    cambia el muro al tipo de aparejo de cabeza (t = 0.23 m).
 //  - alinear_continuidad: desplaza el muro (con sus vanos) para apoyarlo sobre el muro inferior.
@@ -19,7 +19,7 @@ public static class McpDynamicScript
         var w = doc.GetElement(new ElementId(long.Parse((string)data["muroId"]))) as Wall ?? throw new Exception("Muro no encontrado.");
         string accion = (string)data["accion"];
         string msg;
-        using (var t = new Transaction(doc, $"TRAZA · {accion} {w.Id}"))
+        using (var t = new Transaction(doc, $"NexoBIM · {accion} {w.Id}"))
         {
             t.Start();
             if (accion == "alinear_continuidad")

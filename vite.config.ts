@@ -2,12 +2,12 @@ import { defineConfig, type Plugin, type ViteDevServer } from 'vitest/config';
 import type { IncomingMessage } from 'node:http';
 
 // API local del panel: el navegador nunca habla con Revit ni con la API de Claude directamente.
-function trazaApi(): Plugin {
+function nexobimApi(): Plugin {
   let server: ViteDevServer;
   let cola = Promise.resolve<unknown>(null); // Revit procesa una orden a la vez
   const cuerpo = (req: IncomingMessage) => new Promise<any>(ok => { let s = ''; req.on('data', d => (s += d)).on('end', () => ok(s ? JSON.parse(s) : {})); });
   return {
-    name: 'traza-api',
+    name: 'nexobim-api',
     configureServer(s) {
       server = s;
       s.middlewares.use('/api', async (req, res) => {
@@ -41,7 +41,7 @@ function trazaApi(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [trazaApi()],
+  plugins: [nexobimApi()],
   server: { watch: { ignored: ['**/public/live/**', '**/vendor/**'] } },
   build: { rollupOptions: { input: { main: 'index.html', porticos: 'porticos.html' } } },
   test: { include: ['src/**/*.test.ts'] },

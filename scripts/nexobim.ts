@@ -1,4 +1,4 @@
-// CLI de TRAZA E.070. Uso: node scripts/traza.ts <crear|leer|aceptar|params Z U S|verificar|aplicar <opcionId>|estado>
+// CLI de NexoBIM E.070. Uso: node scripts/nexobim.ts <crear|leer|aceptar|params Z U S|verificar|aplicar <opcionId>|estado>
 import * as P from '../src/pipeline.ts';
 import { cerrar } from '../src/revit/bridge.ts';
 

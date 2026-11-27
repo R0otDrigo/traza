@@ -5,3 +5,4 @@ dist
 vendor
 public/live
 modelos
+!.env.example

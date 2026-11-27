@@ -1,4 +1,4 @@
-// Puente TRAZA ⇄ Revit vía rvt-mcp. Ejecuta los scripts C# fijos de /revit (no código generado por IA).
+// Puente NexoBIM ⇄ Revit vía rvt-mcp. Ejecuta los scripts C# fijos de /revit (no código generado por IA).
 import { readFileSync, existsSync, statSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -64,9 +64,9 @@ export async function guardar() {
 export async function pintar(r: Resultado, opciones: Opcion[] = []) {
   const muros: Record<string, { estado: string; texto: string }> = {};
   for (const [id, m] of Object.entries(r.muros)) {
-    muros[id] = { estado: m.estado, texto: `TRAZA E.070: ${m.estado.replace('_', ' ')}${m.motivos.length ? ' — ' + m.motivos.join('; ') : ''}` };
+    muros[id] = { estado: m.estado, texto: `NexoBIM E.070: ${m.estado.replace('_', ' ')}${m.motivos.length ? ' — ' + m.motivos.join('; ') : ''}` };
   }
-  for (const o of opciones) muros[o.muroId] = { estado: 'opcion', texto: `TRAZA E.070: OPCIÓN — ${o.detalle} (+${o.deltaLt} m²)` };
+  for (const o of opciones) muros[o.muroId] = { estado: 'opcion', texto: `NexoBIM E.070: OPCIÓN — ${o.detalle} (+${o.deltaLt} m²)` };
   const niveles: Record<string, string> = {};
   for (const ch of r.chequeos) niveles[ch.nivel] = niveles[ch.nivel] === 'no_cumple' || !ch.cumple ? 'no_cumple' : 'cumple';
   return ejecutar('pintar_resultados.cs', { muros, niveles });

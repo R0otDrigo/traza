@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "traza": {
+    "nexobim": {
       "command": "C:\\Program Files\\nodejs\\node.exe",
-      "args": ["mcp/traza-server.ts"]
+      "args": ["mcp/nexobim-server.ts"]
     }
   }
 }

@@ -27,7 +27,7 @@ export function memoriaHtml(e: Estado): string {
   code{background:#f1f5f9;padding:2px 4px}small{color:#64748b}@media print{button{display:none}}</style></head><body>
   <button onclick="print()">Imprimir / PDF</button>
   <h1>Memoria preliminar — Verificación de densidad mínima de muros (RNE E.070)</h1>
-  <p>Proyecto: <b>${esc(e.modelo.documento)}</b> · Archivo: ${esc(e.modelo.ruta || '(no guardado)')} · Generado por TRAZA el ${esc(fecha)}</p>
+  <p>Proyecto: <b>${esc(e.modelo.documento)}</b> · Archivo: ${esc(e.modelo.ruta || '(no guardado)')} · Generado por NexoBIM el ${esc(fecha)}</p>
   <div class="aviso"><b>Prototipo académico.</b> Este documento es un apoyo a la revisión. Ningún resultado es apto para ejecución sin la verificación y firma de un ingeniero civil colegiado. La IA solo clasificó muros y redactó explicaciones; todos los valores numéricos provienen del motor determinista.</div>
 
   <h2>1. Criterio y fórmula</h2>
