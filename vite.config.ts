@@ -1,6 +1,9 @@
 import { defineConfig, type Plugin, type ViteDevServer } from 'vitest/config';
 import type { IncomingMessage } from 'node:http';
 
+// .env (ANTHROPIC_API_KEY, NEXOBIM_REVIT_PID) para el código de servidor; sin .env se trabaja en modo reglas.
+try { process.loadEnvFile('.env'); } catch { /* sin .env */ }
+
 // API local del panel: el navegador nunca habla con Revit ni con la API de Claude directamente.
 function nexobimApi(): Plugin {
   let server: ViteDevServer;
