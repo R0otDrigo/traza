@@ -1,0 +1,15 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [ReferenceView]'),'2;1');
+FILE_NAME('minimo.ifc','2026-11-27T00:00:00',('NexoBIM'),(''),'','','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROJECT('0YvctVUKr0kugbFTf53O9L',$,'Prueba NexoBIM',$,$,$,$,$,$);
+#2=IFCWALL('1YvctVUKr0kugbFTf53O9L',$,'Muro 1',$,$,$,$,'1001',$);
+#3=IFCWALLSTANDARDCASE('2YvctVUKr0kugbFTf53O9L',$,'Muro 2',$,$,$,$,'1002',$);
+#4=IFCPROPERTYSINGLEVALUE('NexoBIM_Estado',$,IFCTEXT('cuenta'),$);
+#5=IFCPROPERTYSET('3YvctVUKr0kugbFTf53O9L',$,'NexoBIM',$,(#4));
+#6=IFCRELDEFINESBYPROPERTIES('4YvctVUKr0kugbFTf53O9L',$,$,$,(#2),#5);
+ENDSEC;
+END-ISO-10303-21;

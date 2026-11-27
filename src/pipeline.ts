@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import * as revit from './revit/bridge.ts';
 import { clasificar, explicar, planMinimo, iaDisponible, type Clasificacion, type Explicacion } from './ai/asistente.ts';
 import { verificar } from './e070/engine.ts';
+import { agregarVersion } from './bim/versiones.ts';
 import { CASOS, type NombreCaso } from './e070/caso.ts';
 import type { Proyecto, Resultado, Rol } from './e070/types.ts';
 import type { ModeloRevit } from './revit/bridge.ts';
@@ -112,6 +113,7 @@ export async function verificarYPintar(notasArquitectura = '') {
   e.resultado.advertencias.push(...notasS(e.parametros, e.suelo));
   const malos = e.resultado.chequeos.filter(c => !c.cumple);
   log(e, 'motor', 'Verificó E.070', malos.length ? `No cumple: ${malos.map(c => `${c.nivel} ${c.dir}`).join(', ')}` : 'Cumple en X e Y');
+  e.versiones = agregarVersion(e.versiones, e.modelo!, e.resultado, notasArquitectura);
   e.explicacion = await explicar(e.resultado, notasArquitectura);
   const plan = planMinimo(e.resultado);
   e.plan = Object.fromEntries(Object.entries(plan).map(([k, ops]) => [k, ops.map(o => o.id)]));

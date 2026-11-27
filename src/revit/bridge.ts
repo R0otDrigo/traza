@@ -83,3 +83,14 @@ export async function aplicar(o: Opcion) {
 export async function capturar(ruta: string) {
   return llamar(await c(), 'revit_capture_view_image', { output_path: ruta, pixel_size: 1600 });
 }
+
+// ---------- Fase 4: el modelo como base de datos ----------
+export type ValoresNexo = Record<string, string | number>;
+/** Escribe parámetros compartidos NexoBIM_* (los crea si no existen). Solo tras aprobación del ingeniero. */
+export async function escribirParametros(data: { muros: Record<string, ValoresNexo>; proyecto: ValoresNexo }) {
+  return ejecutar('escribir_parametros.cs', data);
+}
+/** Exporta el documento activo a IFC4 con el Pset "NexoBIM" (no modifica el modelo). */
+export async function exportarIfc(ruta: string) {
+  return ejecutar('exportar_ifc.cs', { ruta });
+}
