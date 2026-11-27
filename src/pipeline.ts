@@ -8,13 +8,14 @@ import { verificar } from './e070/engine.ts';
 import { CASOS, type NombreCaso } from './e070/caso.ts';
 import type { Proyecto, Resultado, Rol } from './e070/types.ts';
 import type { ModeloRevit } from './revit/bridge.ts';
+import { sueloVacio, notasS } from './suelo/flujo.ts';
 import type { Actor, EstadoSuelo, EstadoVigilante, VersionModelo, ArchivoIFC } from './contracts/index.ts';
 
 const DIR = fileURLToPath(new URL('../public/live/', import.meta.url));
 mkdirSync(DIR, { recursive: true });
 const RUTA = DIR + 'estado.json';
 
-export interface Parametros { Z: number; U: number; S: number; aprobados: boolean }
+export interface Parametros { Z: number; U: number; S: number; aprobados: boolean; S_fuente?: string }
 export interface Evento { t: string; quien: Actor; accion: string; detalle: string }
 export interface Estado {
   suelo?: EstadoSuelo;                      // fase 3
@@ -34,8 +35,10 @@ export interface Estado {
 }
 
 export function leer(): Estado {
-  if (existsSync(RUTA)) return JSON.parse(readFileSync(RUTA, 'utf8'));
-  return { modelo: null, parametros: { Z: 0.35, U: 1.0, S: 1.15, aprobados: false }, clasificacion: {}, decisiones: {}, resultado: null, explicacion: null, plan: {}, aplicadas: [], log: [], ia: iaDisponible() };
+  const e: Estado = existsSync(RUTA) ? JSON.parse(readFileSync(RUTA, 'utf8'))
+    : { modelo: null, parametros: { Z: 0.35, U: 1.0, S: 1.15, aprobados: false }, clasificacion: {}, decisiones: {}, resultado: null, explicacion: null, plan: {}, aplicadas: [], log: [], ia: iaDisponible() };
+  e.suelo ??= sueloVacio();
+  return e;
 }
 /** Persiste el estado (los módulos de las fases lo usan tras modificar su bloque). */
 export function guardar(e: Estado) { e.ia = iaDisponible(); writeFileSync(RUTA, JSON.stringify(e)); return e; }
@@ -86,8 +89,9 @@ export function aceptarClasificacion() {
 
 export function fijarParametros(p: Partial<Parametros>) {
   const e = leer();
+  if (p.S !== undefined && p.S !== e.parametros.S) p = { ...p, S_fuente: 'manual (ingeniero)' }; // sobrescribe la S prellenada
   e.parametros = { ...e.parametros, ...p };
-  log(e, 'ingeniero', p.aprobados ? 'Aprobó parámetros' : 'Editó parámetros', `Z=${e.parametros.Z} U=${e.parametros.U} S=${e.parametros.S}`);
+  log(e, 'ingeniero', p.aprobados ? 'Aprobó parámetros' : 'Editó parámetros', `Z=${e.parametros.Z} U=${e.parametros.U} S=${e.parametros.S} (S: ${e.parametros.S_fuente ?? 'propuesto'})`);
   return guardar(e);
 }
 
@@ -105,6 +109,7 @@ export async function verificarYPintar(notasArquitectura = '') {
   const falta = pendientes(e);
   if (falta.length) throw new Error(`Falta aprobación del ingeniero: ${falta.join(', ')}.`);
   e.resultado = verificar(proyectoDe(e));
+  e.resultado.advertencias.push(...notasS(e.parametros, e.suelo));
   const malos = e.resultado.chequeos.filter(c => !c.cumple);
   log(e, 'motor', 'Verificó E.070', malos.length ? `No cumple: ${malos.map(c => `${c.nivel} ${c.dir}`).join(', ')}` : 'Cumple en X e Y');
   e.explicacion = await explicar(e.resultado, notasArquitectura);
