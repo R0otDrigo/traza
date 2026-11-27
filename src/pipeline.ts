@@ -39,6 +39,7 @@ export function leer(): Estado {
   const e: Estado = existsSync(RUTA) ? JSON.parse(readFileSync(RUTA, 'utf8'))
     : { modelo: null, parametros: { Z: 0.35, U: 1.0, S: 1.15, aprobados: false }, clasificacion: {}, decisiones: {}, resultado: null, explicacion: null, plan: {}, aplicadas: [], log: [], ia: iaDisponible() };
   e.suelo ??= sueloVacio();
+  e.vigilante ??= { activo: true, pintarAuto: false, huella: null, eventos: [], notificaciones: [] };
   return e;
 }
 /** Persiste el estado (los módulos de las fases lo usan tras modificar su bloque). */
