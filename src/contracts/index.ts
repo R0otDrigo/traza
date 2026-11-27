@@ -135,6 +135,35 @@ export const Notificacion = z.object({
 });
 export type Notificacion = z.infer<typeof Notificacion>;
 
+// ---------- Estado compartido del panel (src/pipeline.ts → Estado) ----------
+// Cada fase es dueña de su bloque y solo escribe en él.
+
+/** Fase 3 (motor) + fase 2 (IA): flujo de suelo. */
+export const EstadoSuelo = z.object({
+  lote: z.object({ lat: z.number(), lon: z.number() }).nullable(),
+  documento: DocumentoEMS.nullable(),        // EMS elegido o subido
+  estudio: EstudioSuelo.nullable(),          // extraído (IA o reglas), con aprobación campo por campo
+  resultado: ResultadoSuelo.nullable(),      // obras cercanas + S del motor
+  modo: z.enum(['IA', 'reglas']).nullable(), // cómo se extrajo el estudio
+});
+export type EstadoSuelo = z.infer<typeof EstadoSuelo>;
+
+/** Fase 5: vigilante en vivo. */
+export const EstadoVigilante = z.object({
+  activo: z.boolean(),
+  pintarAuto: z.boolean(),
+  huella: z.string().nullable(),
+  eventos: z.array(EventoVigilante),         // más reciente primero, máx. 50
+  notificaciones: z.array(Notificacion),     // pendientes de mostrar en el panel
+});
+export type EstadoVigilante = z.infer<typeof EstadoVigilante>;
+
+/** Fase 4: versiones del modelo e IFC exportado. */
+export const VersionModelo = z.object({ huella: z.string(), en: Fecha, cumplimiento: Cumplimiento, nota: z.string() });
+export type VersionModelo = z.infer<typeof VersionModelo>;
+export const ArchivoIFC = z.object({ ruta: z.string(), en: Fecha, verificado: z.boolean(), muros: z.number().int(), conPset: z.number().int() });
+export type ArchivoIFC = z.infer<typeof ArchivoIFC>;
+
 // ---------- Textos obligatorios ----------
 export const AVISO_PROTOTIPO = 'Prototipo académico — requiere verificación y firma de un ingeniero colegiado';
 export const AVISO_SUELO = 'Dato referencial de una obra pública cercana. No reemplaza el Estudio de Mecánica de Suelos del terreno exigido por la E.050.';

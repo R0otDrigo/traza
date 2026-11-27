@@ -17,7 +17,7 @@ function nexobimApi(): Plugin {
         try {
           if (req.method === 'GET' && ruta === 'estado') { const e = P.leer(); return enviar(200, { ...e, pendientes: P.pendientes(e) }); }
           if (req.method === 'GET' && ruta === 'memoria') { const M = await server.ssrLoadModule('/src/report/memoria.ts'); return enviar(200, M.memoriaHtml(P.leer()), 'text/html; charset=utf-8'); }
-          const b = await cuerpo(req);
+          const b = req.method === 'GET' ? {} : await cuerpo(req);
           const acciones: Record<string, () => unknown> = {
             crear: () => P.crearCasoPrueba(b.caso),
             guardar: () => P.guardarModelo(),
@@ -28,7 +28,17 @@ function nexobimApi(): Plugin {
             verificar: () => P.verificarYPintar(b.notas ?? ''),
             aplicar: () => P.aplicarOpcion(b.opcionId),
           };
-          if (!acciones[ruta]) return enviar(404, { error: `Ruta desconocida: ${ruta}` });
+          // Rutas de los módulos (suelo, bim, vigilante): src/api/*.ts
+          const A = await server.ssrLoadModule('/src/api/index.ts');
+          const def = A.rutas[`${req.method} ${ruta}`];
+          if (def) {
+            const ctx = { query: new URL(req.url ?? '', 'http://x').searchParams, req, res };
+            const correr = () => def.fn(b, ctx);
+            const out = await (def.usaRevit ? (cola = cola.catch(() => null).then(correr)) : correr());
+            if (res.writableEnded) return;
+            return enviar(200, out && typeof out === 'object' && 'log' in out ? { ...out, pendientes: P.pendientes(out) } : out);
+          }
+          if (!acciones[ruta]) return enviar(404, { error: `Ruta desconocida: ${req.method} ${ruta}` });
           const r = (cola = cola.catch(() => null).then(acciones[ruta]));
           const e = await r as any;
           enviar(200, { ...e, pendientes: P.pendientes(e) });

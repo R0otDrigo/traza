@@ -6,3 +6,5 @@ vendor
 public/live
 modelos
 !.env.example
+data/fuentes/*
+!data/fuentes/entidades.json

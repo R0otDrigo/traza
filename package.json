@@ -11,11 +11,19 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^1.14.0",
     "@modelcontextprotocol/sdk": "^1.32.2",
+    "leaflet": "^1.9.4",
+    "pdfjs-dist": "^6.5.438",
+    "playwright": "^1.65.1",
+    "proj4": "^2.23.0",
+    "tesseract.js": "^7.0.0",
     "three": "^0.187.0",
+    "web-ifc": "^0.0.81",
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.23",
     "@types/node": "^26.6.7",
+    "@types/proj4": "^2.5.6",
     "@types/three": "^0.187.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",

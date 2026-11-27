@@ -8,14 +8,19 @@ import { verificar } from './e070/engine.ts';
 import { CASOS, type NombreCaso } from './e070/caso.ts';
 import type { Proyecto, Resultado, Rol } from './e070/types.ts';
 import type { ModeloRevit } from './revit/bridge.ts';
+import type { Actor, EstadoSuelo, EstadoVigilante, VersionModelo, ArchivoIFC } from './contracts/index.ts';
 
 const DIR = fileURLToPath(new URL('../public/live/', import.meta.url));
 mkdirSync(DIR, { recursive: true });
 const RUTA = DIR + 'estado.json';
 
 export interface Parametros { Z: number; U: number; S: number; aprobados: boolean }
-export interface Evento { t: string; quien: 'ingeniero' | 'IA' | 'motor' | 'revit'; accion: string; detalle: string }
+export interface Evento { t: string; quien: Actor; accion: string; detalle: string }
 export interface Estado {
+  suelo?: EstadoSuelo;                      // fase 3
+  vigilante?: EstadoVigilante;              // fase 5
+  versiones?: VersionModelo[];              // fase 4
+  ifc?: ArchivoIFC | null;                  // fase 4
   modelo: ModeloRevit | null;
   parametros: Parametros;
   clasificacion: Record<string, Clasificacion>;
@@ -32,7 +37,10 @@ export function leer(): Estado {
   if (existsSync(RUTA)) return JSON.parse(readFileSync(RUTA, 'utf8'));
   return { modelo: null, parametros: { Z: 0.35, U: 1.0, S: 1.15, aprobados: false }, clasificacion: {}, decisiones: {}, resultado: null, explicacion: null, plan: {}, aplicadas: [], log: [], ia: iaDisponible() };
 }
-function guardar(e: Estado) { e.ia = iaDisponible(); writeFileSync(RUTA, JSON.stringify(e)); return e; }
+/** Persiste el estado (los módulos de las fases lo usan tras modificar su bloque). */
+export function guardar(e: Estado) { e.ia = iaDisponible(); writeFileSync(RUTA, JSON.stringify(e)); return e; }
+/** Registro de decisiones: todo cambio deja quién, qué y cuándo. */
+export function registrar(e: Estado, quien: Evento['quien'], accion: string, detalle = '') { log(e, quien, accion, detalle); }
 function log(e: Estado, quien: Evento['quien'], accion: string, detalle = '') {
   e.log.unshift({ t: new Date().toISOString(), quien, accion, detalle });
   e.log = e.log.slice(0, 300);
