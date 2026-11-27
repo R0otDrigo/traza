@@ -1,30 +1,43 @@
 import './e070.css';
 import { Escena } from './escena.ts';
 import { verificar, simular } from '../e070/engine.ts';
+import { pintarSuelo, mostrarMapa, recomendacionesSuelo, colorSucs, esc } from './suelo.ts';
+import { AVISO_PROTOTIPO } from '../contracts/index.ts';
 import type { Proyecto, Resultado, Opcion, Rol } from '../e070/types.ts';
 
 type Estado = any; // espejo de src/pipeline.ts → Estado (+ pendientes)
 const $ = <T extends HTMLElement = HTMLElement>(q: string) => document.querySelector<T>(q)!;
-const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+const DEMO = new URLSearchParams(location.search).has('demo');
 
 let E: Estado | null = null;
 const sim = new Set<string>();           // opciones simuladas (solo en el navegador)
 let sel: string | null = null;
 let ocupado = false;
 let ultimoError = '';
+let foco: { nivel: string; dir: string } | null = null; // barra enlazada desde el vigilante (#nivel=…&dir=…)
+const vistas = new Set<string>();        // notificaciones cerradas en este navegador
 const escena = new Escena($('#escena'));
 escena.onClick = id => { sel = id; render(); };
+$('#aviso').textContent = AVISO_PROTOTIPO;
 
-async function api(ruta: string, body?: object) {
-  const r = await fetch(`/api/${ruta}`, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined);
-  const j = await r.json();
+async function api(ruta: string, body?: object, metodo = body ? 'POST' : 'GET') {
+  let r: Response;
+  try { r = await fetch(`/api/${ruta}`, metodo === 'POST' ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) } : undefined); }
+  catch { throw new Error('Sin conexión con el servidor de NexoBIM (npm run dev).'); }
+  const j = await r.json().catch(() => ({ error: `Respuesta no válida del servidor (${r.status}).` }));
+  if (r.status === 404) throw new Error(`Función aún no disponible en el servidor: ${metodo} /api/${ruta}.`);
   if (!r.ok) throw new Error(j.error);
   return j;
 }
-async function accion(ruta: string, body: object = {}, texto = 'Procesando…') {
+async function accion(ruta: string, body: object = {}, texto = 'Procesando…', metodo = 'POST') {
   if (ocupado) return;
+  if (DEMO) { ultimoError = `Modo demo: "${metodo} /api/${ruta}" no se envía al servidor.`; return render(); }
   ocupado = true; ultimoError = ''; $('#ocupado').textContent = texto; document.body.classList.add('busy');
-  try { E = await api(ruta, body); if (ruta === 'aplicar' || ruta === 'leer') sim.clear(); }
+  try {
+    const j = await api(ruta, body, metodo);
+    E = j && typeof j === 'object' && 'log' in j ? j : await api('estado'); // algunas rutas no devuelven el Estado
+    if (ruta === 'aplicar' || ruta === 'leer') sim.clear();
+  }
   catch (e) { ultimoError = (e as Error).message; }
   finally { ocupado = false; document.body.classList.remove('busy'); render(); }
 }
@@ -43,14 +56,23 @@ function render() {
   const p = proyecto();
   $('#doc').textContent = E?.modelo ? `${E.modelo.documento} · ${E.modelo.muros.length} muros · ${E.modelo.niveles.length} niveles` : 'Sin modelo leído';
   $('#ia').className = `ia ${E?.ia ? 'on' : 'off'}`;
-  $('#ia').textContent = E?.ia ? 'IA: Claude activo' : 'IA: modo reglas (sin API key)';
+  $('#ia').textContent = (DEMO ? 'MODO DEMO · ' : '') + (E?.ia ? 'IA: Claude activo' : 'IA: modo reglas (sin API key)');
   $('#pend').innerHTML = ultimoError ? `<b class="err">⚠ ${esc(ultimoError)}</b>` : E?.pendientes?.length ? `Pendiente: ${E.pendientes.map(esc).join(' · ')}` : E?.resultado ? 'Verificación oficial vigente' : '';
   pintarParametros();
   pintarMuros();
-  if (!p) { $('#barras').innerHTML = '<p class="muted">Lee el modelo de Revit para empezar.</p>'; return; }
+  pintarSuelo(E?.suelo, E?.parametros?.S ?? 0, accion);
+  pintarVigilante();
+  if (!p) { $('#barras').innerHTML = '<p class="muted">Lee el modelo de Revit para empezar.</p>'; $('#recom').innerHTML = recomendaciones(null); return; }
   const r = verificar(p);
-  escena.dibujar(p, r, new Set((E.resultado?.opciones ?? []).filter((o: Opcion) => sim.has(o.id)).map((o: Opcion) => o.muroId)), sel);
+  const es = E.suelo?.estudio ?? E.suelo?.resultado?.estudioElegido;
+  const cal = (es?.calicatas ?? []).filter((c: any) => c.valor && c.estado !== 'rechazado').map((c: any) => c.valor);
+  escena.dibujar(p, r, new Set((E.resultado?.opciones ?? []).filter((o: Opcion) => sim.has(o.id)).map((o: Opcion) => o.muroId)), sel,
+    cal.length ? { calicatas: cal, perfil: es.perfilE030.valor, S: E.suelo?.resultado?.S_motor ?? null } : undefined);
+  const sucs = [...new Set(cal.flatMap((c: any) => c.estratos.map((e: any) => e.SUCS)))] as string[];
+  $('#leySuelo').hidden = !sucs.length;
+  $('#leySuelo').innerHTML = `<b>Estratos (SUCS)</b>${sucs.map(s => `<span><i style="background:${colorSucs(s)}"></i>${esc(s)}</span>`).join('')}`;
   pintarBarras(r);
+  $('#recom').innerHTML = recomendaciones(r);
   pintarOpciones(r);
   pintarDetalle(p, r);
   $('#log').innerHTML = (E.log ?? []).slice(0, 60).map((l: any) => `<li class="${l.quien}"><time>${new Date(l.t).toLocaleTimeString()}</time><b>${esc(l.quien)}</b> ${esc(l.accion)}<small>${esc(l.detalle)}</small></li>`).join('');
@@ -61,6 +83,8 @@ function pintarParametros() {
   const N = E?.modelo?.niveles.length ?? 0;
   for (const k of ['Z', 'U', 'S'] as const) $<HTMLInputElement>(`#${k}`).value = String(pr[k]);
   $('#req').innerHTML = `N = ${N} → Z·U·S·N/56 = <b>${N ? ((pr.Z * pr.U * pr.S * N) / 56).toFixed(6) : '—'}</b>`;
+  const rs = E?.suelo?.resultado;
+  $('#sFuente').textContent = rs?.S_motor != null ? `Suelo: S = ${rs.S_motor} · ${rs.S_fuente}${rs.S_motor === pr.S ? '' : ' (aún no usado en los parámetros)'}` : 'S sin estudio de suelos: valor asumido (ver pestaña Suelo).';
   $('#aprobarParams').textContent = pr.aprobados ? '✓ Aprobados' : 'Aprobar parámetros';
   $('#aprobarParams').classList.toggle('ok', pr.aprobados);
 }
@@ -96,7 +120,7 @@ function pintarBarras(r: Resultado) {
     const c = r.chequeos.find(c => c.nivel === nv && c.dir === d)!;
     const o = oficial?.chequeos.find(c => c.nivel === nv && c.dir === d);
     const pct = Math.min(100, (c.densidad / (c.requerido * 2)) * 100);
-    return `<div class="barra ${c.cumple ? 'ok' : 'mal'}" title="${esc(c.sustitucion)}"><em>${d}</em><div class="track"><i style="width:${pct}%"></i><u></u>${o && Math.abs(o.densidad - c.densidad) > 1e-9 ? `<s style="left:${Math.min(100, (o.densidad / (o.requerido * 2)) * 100)}%"></s>` : ''}</div><b>${(c.densidad / c.requerido).toFixed(2)}×</b></div>`;
+    return `<div class="barra ${c.cumple ? 'ok' : 'mal'} ${foco?.nivel === nv && foco.dir === d ? 'foco' : ''}" title="${esc(c.sustitucion)}"><em>${d}</em><div class="track"><i style="width:${pct}%"></i><u></u>${o && Math.abs(o.densidad - c.densidad) > 1e-9 ? `<s style="left:${Math.min(100, (o.densidad / (o.requerido * 2)) * 100)}%"></s>` : ''}</div><b>${(c.densidad / c.requerido).toFixed(2)}×</b></div>`;
   }).join('')}</div>`).join('') + `<p class="muted f">${esc(r.formula)} · ${esc(r.norma)}. La línea blanca es el mínimo; la marca gris, el último resultado oficial.</p>`;
 }
 
@@ -136,6 +160,77 @@ function pintarDetalle(p: Proyecto, r: Resultado) {
     <table><tr><th>Tramo</th><th>L (m)</th><th>L·t (m²)</th><th>¿Cuenta?</th></tr>${ts.map((t, i) => `<tr class="${t.cuenta ? 'ok' : 'mal'}"><td>${i + 1}</td><td>${t.L}</td><td>${(t.L * t.t).toFixed(3)}</td><td>${t.cuenta ? 'Sí' : esc(t.motivos.join('; '))}</td></tr>`).join('')}</table>`;
 }
 
+function recomendaciones(r: Resultado | null) {
+  let dens = '<p class="muted">Lee el modelo de Revit para ver qué falta.</p>';
+  if (r) {
+    const malos = r.chequeos.filter(c => !c.cumple);
+    const ops = new Map<string, Opcion>((E.resultado?.opciones ?? []).map((o: Opcion) => [o.id, o]));
+    dens = !malos.length ? '<p class="ok-txt">✓ Cumple la densidad mínima en todos los niveles y direcciones.</p>' : malos.map(c => {
+      const plan = ((E.plan?.[`${c.nivel}|${c.dir}`] ?? []) as string[]).map(id => ops.get(id)).filter(Boolean) as Opcion[];
+      const suma = plan.reduce((a, o) => a + o.deltaLt, 0);
+      return `<div class="rec-d"><div><b>${esc(c.nivel)} ${c.dir}</b> <span class="muted">faltan ${c.deficitLt.toFixed(2)} m² de L·t</span></div>
+        <ul>${plan.map(o => `<li>${esc(o.detalle.split(' — ')[0])} <b>+${o.deltaLt} m²</b></li>`).join('') || '<li class="muted">Sin opciones del motor: pulsa «Verificar».</li>'}</ul>
+        ${plan.length ? `<small class="${suma >= c.deficitLt - 1e-9 ? 'ok-txt' : 'adv'}">Aporte del plan mínimo: ${suma.toFixed(2)} m² ${suma >= c.deficitLt - 1e-9 ? '≥' : '<'} déficit</small>` : ''}</div>`;
+    }).join('');
+  }
+  return `<h4>Densidad <small>(opciones del motor E.070)</small></h4>${dens}<h4>Cimentación y cemento <small>(textos del EMS)</small></h4>${recomendacionesSuelo(E?.suelo)}`;
+}
+
+const hora = (t: string) => new Date(t).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' });
+function pintarVigilante() {
+  const v = E?.vigilante;
+  const ns = (v?.notificaciones ?? []).filter((n: any) => !vistas.has(n.mensaje));
+  $('#vigia').hidden = !ns.length;
+  $('#vigia').innerHTML = ns.map((n: any) => `<div class="${n.tipo === 'deja_de_cumplir' ? 'mal' : 'ok'}">
+    <b>${n.tipo === 'deja_de_cumplir' ? '✗ Deja de cumplir' : '✓ Vuelve a cumplir'}</b><span>${esc(n.mensaje)}</span>
+    <a href="#${esc(n.url.split('#')[1] ?? '')}">Ver ${esc(n.nivel)} · ${esc(n.dir)}</a><button class="mini sec" data-cerrar="${esc(n.mensaje)}" aria-label="Cerrar aviso">✕</button></div>`).join('');
+  $<HTMLInputElement>('#vigActivo').checked = !!v?.activo;
+  $<HTMLInputElement>('#vigPintar').checked = !!v?.pintarAuto;
+  const f = E?.ifc;
+  $('#ifcInfo').innerHTML = f ? `IFC: ${esc(f.ruta)} · ${hora(f.en)} · ${f.conPset}/${f.muros} muros con Pset ${f.verificado ? '<span class="ok-txt">✓ verificado</span>' : '<span class="adv">sin verificar</span>'} · <a href="/api/bim/ifc" target="_blank" rel="noopener">descargar</a>` : 'Aún no se exportó el IFC.';
+  const flip = (ev: any) => ev.cumplimientoDespues.filter((d: any) => ev.cumplimientoAntes.find((a: any) => a.nivel === d.nivel && a.dir === d.dir)?.cumple !== d.cumple)
+    .map((d: any) => `<em class="${d.cumple ? 'ok' : 'mal'}">${esc(d.nivel)} ${d.dir}: ${d.cumple ? 'vuelve a cumplir' : 'deja de cumplir'}</em>`).join('');
+  const ev = (v?.eventos ?? []).slice(0, 10), vs = (E?.versiones ?? []).slice(0, 10);
+  $('#historial').innerHTML = !ev.length && !vs.length ? '<li class="muted">Sin cambios registrados. Activa la vigilancia para detectar cambios del modelo en Revit.</li>'
+    : ev.map((x: any) => `<li><time>${hora(x.en)}</time><b>Cambio</b>${x.cambios.map((c: string) => `<small>${esc(c)}</small>`).join('')}${flip(x)}</li>`).join('')
+    + vs.map((x: any) => `<li class="ver"><time>${hora(x.en)}</time><b>Versión ${esc(x.huella)}</b> <span class="muted">${x.cumplimiento.filter((c: any) => c.cumple).length}/${x.cumplimiento.length} cumplen</span><small>${esc(x.nota)}</small></li>`).join('');
+}
+$('#vigia').addEventListener('click', e => { const c = (e.target as HTMLElement).dataset.cerrar; if (c) { vistas.add(c); pintarVigilante(); } });
+$<HTMLInputElement>('#vigActivo').onchange = e => accion('vigilante', { activo: (e.target as HTMLInputElement).checked }, 'Cambiando vigilancia…');
+$<HTMLInputElement>('#vigPintar').onchange = e => accion('vigilante', { pintarAuto: (e.target as HTMLInputElement).checked }, 'Cambiando pintado automático…');
+$('#btnVistas').onclick = () => accion('vigilante/vistas', {}, 'Creando vistas en Revit…');
+$('#btnParamRevit').onclick = () => { if (confirm('¿Escribir los parámetros NexoBIM_* (resultado E.070 y datos de suelo aprobados) en los muros del modelo de Revit?\n\nSe puede deshacer con Ctrl+Z en Revit y queda en el registro de decisiones.')) accion('bim/parametros', { aprobado: true }, 'Escribiendo parámetros en Revit…'); };
+$('#btnIfc').onclick = () => accion('bim/ifc', {}, 'Exportando IFC…');
+
+function tab(t: string) {
+  document.querySelectorAll<HTMLElement>('.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.tab === t); b.setAttribute('aria-selected', String(b.dataset.tab === t)); });
+  $('#vistaE070').hidden = t !== 'e070';
+  $('#vistaSuelo').hidden = t !== 'suelo';
+  document.body.dataset.tab = t;
+  if (t === 'suelo') mostrarMapa();
+}
+document.querySelectorAll<HTMLElement>('.tabs button').forEach(b => (b.onclick = () => tab(b.dataset.tab!)));
+tab(new URLSearchParams(location.search).get('tab') === 'suelo' ? 'suelo' : 'e070');
+
+/** Enlace del vigilante: #nivel=<n>&dir=<X|Y> resalta esa barra. */
+function leerHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  foco = h.get('nivel') ? { nivel: h.get('nivel')!, dir: h.get('dir') ?? 'X' } : null;
+  if (foco) tab('e070');
+  render();
+  document.querySelector('.barra.foco')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+addEventListener('hashchange', leerHash);
+
+function presentar() {
+  const on = document.body.classList.toggle('presentacion');
+  if (on) document.documentElement.requestFullscreen?.().catch(() => {});
+  else if (document.fullscreenElement) document.exitFullscreen();
+}
+$('#btnPres').onclick = presentar;
+addEventListener('keydown', e => { if (e.key.toLowerCase() === 'p' && !e.ctrlKey && !e.metaKey && !e.altKey && !(e.target as HTMLElement).matches('input, textarea, select')) presentar(); });
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) document.body.classList.remove('presentacion'); });
+
 $('#btnCrear').onclick = () => {
   const caso = $<HTMLSelectElement>('#caso').value;
   if (confirm(`Se creará un proyecto NUEVO en Revit (en la carpeta modelos/) con el caso "${caso}" y se reiniciará el registro de NexoBIM. El proyecto abierto no se modifica. ¿Continuar?`)) { sel = null; accion('crear', { caso }, 'Creando proyecto y construyendo el modelo en Revit…'); }
@@ -145,5 +240,8 @@ $('#btnLeer').onclick = () => accion('leer', {}, 'Leyendo Revit y clasificando m
 $('#btnVerificar').onclick = () => accion('verificar', { notas: $<HTMLInputElement>('#notas').value }, 'Verificando E.070 y pintando Revit…');
 $('#btnMemoria').onclick = () => open('/api/memoria', '_blank');
 
-api('estado').then(e => { E = e; render(); }).catch(() => render());
-setInterval(async () => { if (ocupado) return; try { const e = await api('estado'); if (JSON.stringify(e.log?.[0]) !== JSON.stringify(E?.log?.[0])) { E = e; render(); } } catch {} }, 3000);
+const firma = (e: Estado) => JSON.stringify([e?.log?.[0], e?.vigilante?.notificaciones, e?.vigilante?.huella]);
+(DEMO ? fetch('/fixtures/estado_demo.json').then(r => r.json()) : api('estado'))
+  .then(e => { E = e; leerHash(); })
+  .catch(e => { ultimoError = (e as Error).message; render(); });
+if (!DEMO) setInterval(async () => { if (ocupado) return; try { const e = await api('estado'); if (firma(e) !== firma(E)) { E = e; render(); } } catch {} }, 3000);

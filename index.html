@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:," />
   <title>NexoBIM · Verificador E.070 en Revit</title>
 </head>
 <body>
@@ -10,9 +11,12 @@
     <div class="brand"><b>NexoBIM</b><span>Densidad mínima de muros · Albañilería confinada · RNE E.070</span></div>
     <span id="doc" class="muted"></span>
     <span id="ia" class="ia"></span>
-    <div class="aviso">Prototipo académico — requiere verificación y firma de un ingeniero colegiado</div>
+    <button id="btnPres" class="sec mini" title="Modo presentación a pantalla completa (tecla P)">Presentación (P)</button>
+    <div class="aviso" id="aviso">Prototipo académico — requiere verificación y firma de un ingeniero colegiado</div>
   </header>
   <nav class="flujo">
+    <div class="tabs" role="tablist"><button data-tab="e070" role="tab" class="on">E.070</button><button data-tab="suelo" role="tab">Suelo</button></div>
+    <span class="ctl-e070">
     <select id="caso" title="Caso de prueba (simulación)"><option value="municipalidad">Municipalidad · Plaza de Armas (simulación)</option><option value="vivienda">Vivienda 4 pisos</option></select>
     <button id="btnCrear" class="sec" title="Solo para demo: crea un proyecto NUEVO en Revit con el caso elegido">0 · Crear en Revit</button>
     <button id="btnLeer">1 · Leer modelo de Revit</button>
@@ -21,10 +25,12 @@
     <button id="btnVerificar">3 · Verificar y pintar Revit</button>
     <button id="btnMemoria" class="sec">4 · Memoria</button>
     <button id="btnGuardar" class="sec" title="Guarda el modelo de Revit">Guardar .rvt</button>
+    </span>
     <span id="pend" class="pend"></span>
     <span id="ocupado" class="ocupado"></span>
   </nav>
-  <main>
+  <div id="vigia" class="vigia" role="status" hidden></div>
+  <main id="vistaE070">
     <aside class="izq">
       <section>
         <h2>Parámetros sísmicos (E.030)</h2>
@@ -34,6 +40,7 @@
           <label>S <input id="S" type="number" step="0.05"></label>
         </div>
         <p id="req" class="muted"></p>
+        <p id="sFuente" class="muted f"></p>
         <button id="aprobarParams" class="sec">Aprobar parámetros</button>
       </section>
       <section>
@@ -43,18 +50,49 @@
       </section>
     </aside>
     <div id="escena">
+      <div id="leySuelo" class="ley-suelo" hidden></div>
       <div class="leyenda"><span class="cuenta">Cuenta</span><span class="no_cuenta">No cuenta</span><span class="tabique">Tabique</span><span class="opcion">Opción simulada</span><span class="desconocido">Sin rol</span></div>
     </div>
     <aside class="der">
       <section><h2>Densidad por nivel <small>(en vivo)</small></h2><div id="barras"></div></section>
-      <section>
+      <section><h2>Recomendaciones</h2><div id="recom"></div></section>
+      <section class="sec2">
         <div class="tit"><h2>Opciones de refuerzo</h2><span><button id="simPlan" class="sec mini">Simular plan mínimo</button> <button id="simNada" class="sec mini">Limpiar</button></span></div>
         <p id="resumen"></p>
         <ul id="opciones"></ul>
       </section>
-      <section><h2>Muro seleccionado</h2><div id="detalle"></div></section>
-      <section><h2>Registro de decisiones</h2><ul id="log"></ul></section>
+      <section class="sec2"><h2>Muro seleccionado</h2><div id="detalle"></div></section>
+      <section class="sec2">
+        <div class="tit"><h2>Modelo en vivo</h2><button id="btnVistas" class="sec mini" title="Crea en Revit las vistas del vigilante">Vistas en Revit</button></div>
+        <div class="toggles"><label><input type="checkbox" id="vigActivo"> Vigilancia en vivo</label><label><input type="checkbox" id="vigPintar"> Pintar automático</label></div>
+        <div class="row2"><button id="btnParamRevit" class="sec mini">Escribir parámetros en Revit</button><button id="btnIfc" class="sec mini">Exportar IFC</button></div>
+        <p id="ifcInfo" class="muted f"></p>
+        <ul id="historial"></ul>
+      </section>
+      <section class="sec2"><h2>Registro de decisiones</h2><ul id="log"></ul></section>
     </aside>
+  </main>
+  <main id="vistaSuelo" hidden>
+    <div class="suelo-izq">
+      <div id="mapa"><p id="mapaAviso" class="mapa-aviso" hidden></p></div>
+      <section class="obras">
+        <div class="tit"><h2>Obras públicas cercanas <small>(SEACE, por distancia)</small></h2><button id="btnCercanos" class="sec mini">Actualizar lista</button></div>
+        <p class="muted f">Haz clic en el mapa para fijar el lote. Círculos: 300 m y 1 km.</p>
+        <ul id="obras"></ul>
+        <details class="subir"><summary>Subir un EMS propio</summary>
+          <form id="formSubir">
+            <input name="archivoLocal" placeholder="Ruta local del PDF (data/fuentes/…)">
+            <input name="url" placeholder="o URL del PDF">
+            <input name="entidad" placeholder="Entidad" required>
+            <input name="descripcion" placeholder="Descripción de la obra" required>
+            <input name="lat" type="number" step="any" placeholder="Latitud" required>
+            <input name="lon" type="number" step="any" placeholder="Longitud" required>
+            <button>Subir y extraer</button>
+          </form>
+        </details>
+      </section>
+    </div>
+    <aside class="ficha"><div id="ficha"></div></aside>
   </main>
   <script type="module" src="/src/app/e070.ts"></script>
 </body>
