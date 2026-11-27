@@ -44,7 +44,8 @@ export interface TextoPdf { paginas: number; paginasEscaneadas: number[]; texto:
 /** Lee el texto de las primeras `max` páginas con pdfjs. Escaneada = menos de 30 caracteres de texto. */
 export async function leerPdf(ruta: string, max = 15): Promise<TextoPdf> {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  const doc = await pdfjs.getDocument({ data: new Uint8Array(readFileSync(ruta)), isEvalSupported: false, verbosity: 0 }).promise;
+  const tarea = pdfjs.getDocument({ data: new Uint8Array(readFileSync(ruta)), verbosity: 0 });
+  const doc = await tarea.promise;
   const paginasEscaneadas: number[] = [];
   let texto = '';
   try {
@@ -56,5 +57,5 @@ export async function leerPdf(ruta: string, max = 15): Promise<TextoPdf> {
       pag.cleanup();
     }
     return { paginas: doc.numPages, paginasEscaneadas, texto };
-  } finally { await doc.destroy(); }
+  } finally { await tarea.destroy(); }
 }
