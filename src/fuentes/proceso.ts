@@ -15,7 +15,7 @@ export const esCandidato = (a: Archivo) =>
 export async function analizarPdf(obraId: string, ruta: string, url: string, etiquetaExtra = ''): Promise<number> {
   const t = await leerPdf(ruta);
   const puntaje = puntajeEMS(`${basename(ruta)} ${etiquetaExtra}`, t.texto);
-  guardarDocumento({ obraId, url, archivoLocal: ruta, sha256: sha256(ruta), paginas: t.paginas, paginasEscaneadas: t.paginasEscaneadas, puntajeEMS: puntaje });
+  if (puntaje > 0) guardarDocumento({ obraId, url, archivoLocal: ruta, sha256: sha256(ruta), paginas: t.paginas, paginasEscaneadas: t.paginasEscaneadas, puntajeEMS: puntaje });
   return puntaje;
 }
 

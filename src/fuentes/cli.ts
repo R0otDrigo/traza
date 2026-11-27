@@ -58,6 +58,16 @@ export async function suelo(cmd: string, argv: string[]): Promise<void> {
       console.log(`✓ obra ${id} guardada; ${basename(pdf)} puntaje EMS ${p}`);
       break;
     }
+    case 'suelo:ubicar': { // coordenadas desde INFObras para obras sin ubicación
+      const { ubicarEnInfobras } = await import('./infobras.ts');
+      const { actualizarUbicacion } = await import('./indice.ts');
+      for (const { obra: o } of listarObras().filter(x => !x.obra.ubicacion && (!s('obra') || x.obra.id === s('obra')))) {
+        const u = await ubicarEnInfobras(o).catch(e => (console.log(`  ! ${o.nomenclatura}: ${e.message}`), null));
+        if (u) actualizarUbicacion(o.id, u.ubicacion);
+        console.log(u ? `✓ ${o.nomenclatura} → INFObras ${u.codigo} (${u.ubicacion.lat}, ${u.ubicacion.lon})` : `  ${o.nomenclatura}: sin coincidencia en INFObras`);
+      }
+      break;
+    }
     case 'suelo:cercanos': {
       if (!s('lat') || !s('lon')) throw new Error('Uso: suelo:cercanos --lat <lat> --lon <lon>');
       const r = cercanos(+s('lat')!, +s('lon')!);

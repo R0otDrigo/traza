@@ -6,6 +6,7 @@ import { puntajeNombre, puntajeTexto, puntajeEMS } from './ems.ts';
 import { parsearResultados, parsearEnlaces, parsearFicha, distrito, tipoArchivo } from './parse.ts';
 import * as I from './indice.ts';
 import { haversine } from './cercanos.ts';
+import { lugar, coincidencia } from './infobras.ts';
 import { ObraPublica, DocumentoEMS } from '../contracts/index.ts';
 
 const fx = (n: string) => readFileSync(new URL(`./fixtures/${n}`, import.meta.url), 'utf8');
@@ -53,6 +54,18 @@ describe('parseo del SEACE (HTML guardado)', () => {
     expect(distrito('OBRA EN LA AV. X, DISTRITO DE JACOBO HUNTER Y DISTRITO DE JOSE LUIS BUSTAMANTE')).toBe('JACOBO HUNTER');
     expect(distrito('PARQUE LAS CONDES, DISTRITO DE AREQUIPA, PROVINCIA DE AREQUIPA')).toBe('AREQUIPA');
     expect(distrito('sin dato')).toBeNull();
+  });
+});
+
+describe('INFObras: emparejar por lugar', () => {
+  const d = 'CONTRATACIÓN DE EJECUCIÓN DE OBRA "MEJORAMIENTO DEL SERVICIO DE PRACTICA DEPORTIVA Y/O RECREATIVA EN EL PARQUE LAS CONDES URB. LA PERLA, DISTRITO DE AREQUIPA';
+  it('extrae el lugar de la descripción', () => {
+    expect(lugar(d)).toBe('PARQUE LAS CONDES URB. LA PERLA');
+    expect(lugar('REPARACIÓN DE CALZADA; EN EL (LA) AV. ANDRES AVELINO CACERES, DISTRITO DE JACOBO HUNTER')).toBe('AV. ANDRES AVELINO CACERES');
+  });
+  it('mide la coincidencia de nombres', () => {
+    expect(coincidencia(d, 'MEJORAMIENTO DEL SERVICIO DE PRÁCTICA DEPORTIVA Y/O RECREATIVA EN PARQUE LAS CONDES, URB. LA PERLA DISTRITO DE AREQUIPA')).toBeGreaterThan(0.8);
+    expect(coincidencia(d, 'CONSTRUCCION DE COBERTURA EN LA I.E. 15 DISTRITO DE SANTA MARIA')).toBeLessThan(0.2);
   });
 });
 
