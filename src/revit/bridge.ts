@@ -14,12 +14,27 @@ export interface MuroRevit extends Omit<Muro, 'rol'> {
 }
 export interface ModeloRevit { documento: string; ruta: string; niveles: Proyecto['niveles']; muros: MuroRevit[] }
 
-let cliente: Awaited<ReturnType<typeof conectar>> | null = null;
-async function c() { return (cliente ??= await conectar()); }
-export async function cerrar() { await cliente?.close(); cliente = null; }
+// Revit atiende a UN cliente rvt-mcp a la vez: todo el proceso (rutas del panel, vigilante) comparte un cliente
+// y una cola FIFO. Vive en globalThis para sobrevivir a la recarga en caliente de Vite (ssrLoadModule).
+type Cliente = Awaited<ReturnType<typeof conectar>>;
+const G: { cliente: Promise<Cliente> | null; cola: Promise<unknown>; enCurso: number } =
+  ((globalThis as any).__nexobimRevit ??= { cliente: null, cola: Promise.resolve(), enCurso: 0 });
+async function c() { return (G.cliente ??= conectar().catch(e => { G.cliente = null; throw e; })); }
+export async function cerrar() { const k = G.cliente; G.cliente = null; await (await k?.catch(() => null))?.close(); }
+
+/** true si hay operaciones con Revit en curso o esperando en la cola. */
+export const ocupado = () => G.enCurso > 0;
+/** Encola una operación con Revit (FIFO, una a la vez). */
+export function enCola<T>(fn: () => Promise<T>): Promise<T> {
+  G.enCurso++;
+  const r = G.cola.then(fn).finally(() => G.enCurso--);
+  G.cola = r.catch(() => {});
+  return r;
+}
+const rvt = (tool: string, args: Record<string, unknown> = {}) => enCola(async () => llamar(await c(), tool, args));
 
 async function ejecutar(archivo: string, data: object = {}): Promise<string> {
-  const txt = await llamar(await c(), 'revit_send_code_to_revit', { code: cs(archivo), data, usage_context: 'project' });
+  const txt = await rvt('revit_send_code_to_revit', { code: cs(archivo), data, usage_context: 'project' });
   // rvt-mcp envuelve la respuesta; buscamos el valor devuelto por Run().
   try {
     const j = JSON.parse(txt);
@@ -30,6 +45,11 @@ async function ejecutar(archivo: string, data: object = {}): Promise<string> {
 
 export async function extraer(): Promise<ModeloRevit> {
   return JSON.parse(await ejecutar('extraer_muros.cs'));
+}
+
+/** Hash liviano del modelo (muros, vanos, tipos, niveles, losas). Solo lectura. */
+export async function huella(): Promise<{ huella: string; muros: number; vanos: number }> {
+  return JSON.parse(await ejecutar('huella_modelo.cs'));
 }
 
 /** Espera a que un archivo exista y deje de crecer (Revit guarda en segundo plano). */
@@ -52,8 +72,8 @@ export async function crearModelo(caso: CasoPrueba, ruta: string) {
     await esperarArchivo(base);
   }
   copyFileSync(base, ruta);
-  await llamar(await c(), 'revit_open_model', { path: ruta, activate: true, timeout_seconds: 300 });
-  await fijarInstancia(await c());
+  await rvt('revit_open_model', { path: ruta, activate: true, timeout_seconds: 300 });
+  await enCola(async () => fijarInstancia(await c()));
   return ejecutar('crear_modelo.cs', caso);
 }
 
@@ -81,5 +101,5 @@ export async function aplicar(o: Opcion) {
 }
 
 export async function capturar(ruta: string) {
-  return llamar(await c(), 'revit_capture_view_image', { output_path: ruta, pixel_size: 1600 });
+  return rvt('revit_capture_view_image', { output_path: ruta, pixel_size: 1600 });
 }
