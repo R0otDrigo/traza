@@ -2,6 +2,11 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import type { Proyecto, Resultado, Tramo } from '../e070/types.ts';
+import type { Calicata } from '../contracts/index.ts';
+import { colorSucs } from './suelo.ts';
+
+/** Suelo bajo el edificio: calicatas del EMS, perfil y S del motor. */
+export interface SueloEscena { calicatas: Calicata[]; perfil: string | null; S: number | null }
 
 const C = { cuenta: 0x22c55e, no_cuenta: 0xef4444, tabique: 0x94a3b8, opcion: 0x38bdf8, desconocido: 0xf59e0b };
 
@@ -12,6 +17,7 @@ export class Escena {
   private labels = new CSS2DRenderer();
   private controls: OrbitControls;
   private grupo = new THREE.Group();
+  private piso = new THREE.Group(); // terreno + grilla; baja al fondo de las calicatas para mostrar el bloque de suelo
   private ray = new THREE.Raycaster();
   private resaltados = new Set<string>();
   private seleccion: string | null = null;
@@ -44,14 +50,15 @@ export class Escena {
     const suelo = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 1 }));
     suelo.rotation.x = -Math.PI / 2;
     suelo.receiveShadow = true;
-    this.scene.add(suelo, new THREE.GridHelper(300, 300, 0x1e293b, 0x172036), this.grupo);
-    addEventListener('resize', () => this.resize());
+    this.piso.add(suelo, new THREE.GridHelper(300, 300, 0x1e293b, 0x172036));
+    this.scene.add(this.piso, this.grupo);
+    new ResizeObserver(() => this.resize()).observe(host);
     this.renderer.domElement.addEventListener('pointerdown', e => (this.down = [e.clientX, e.clientY]));
     this.renderer.domElement.addEventListener('pointerup', e => this.click(e));
     this.renderer.setAnimationLoop(t => this.frame(t));
   }
 
-  dibujar(p: Proyecto, r: Resultado, resaltar: Set<string>, seleccion: string | null) {
+  dibujar(p: Proyecto, r: Resultado, resaltar: Set<string>, seleccion: string | null, suelo?: SueloEscena) {
     this.resaltados = resaltar;
     this.seleccion = seleccion;
     for (const o of [...this.grupo.children]) { this.grupo.remove(o); o.traverse((x: any) => { x.geometry?.dispose(); x.material?.dispose?.(); }); }
@@ -90,6 +97,8 @@ export class Escena {
       o.position.set(x0 - 1.2, n.elevacion + 1.3, y0);
       this.grupo.add(o);
     }
+    this.piso.position.y = suelo?.calicatas.length ? -Math.max(...suelo.calicatas.map(c => c.profundidad_m)) - 0.03 : 0;
+    if (suelo?.calicatas.length) this.estratos(suelo, x0, x1, y0, y1);
     if (!this.encuadrado && r.tramos.length) {
       const H = Math.max(...p.niveles.map(n => n.elevacion)) + 3;
       const c = new THREE.Vector3((x0 + x1) / 2, H / 2, (y0 + y1) / 2);
@@ -98,6 +107,32 @@ export class Escena {
       this.camera.position.set(c.x - R * 1.6, H + R * 1.0, c.z - R * 1.5);
       this.encuadrado = true;
     }
+  }
+
+  /** Una franja por calicata bajo la planta; cada estrato es un bloque del color de su SUCS (profundidad real). */
+  private estratos(s: SueloEscena, x0: number, x1: number, y0: number, y1: number) {
+    const w = (x1 - x0) / s.calicatas.length;
+    const etiqueta = (texto: string, clase: string, x: number, y: number, z: number) => {
+      const d = document.createElement('div');
+      d.className = clase;
+      d.textContent = texto;
+      const o = new CSS2DObject(d);
+      o.position.set(x, y, z);
+      this.grupo.add(o);
+    };
+    s.calicatas.forEach((c, i) => {
+      const cx = x0 + w * (i + 0.5);
+      for (const e of c.estratos) {
+        const h = Math.max(0.05, e.hasta_m - e.desde_m);
+        const g = new THREE.BoxGeometry(w - 0.3, h, y1 - y0);
+        const b = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: colorSucs(e.SUCS), roughness: 0.95 }));
+        b.position.set(cx, -e.desde_m - h / 2 - 0.02, (y0 + y1) / 2);
+        b.add(new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({ color: 0x020617, transparent: true, opacity: 0.5 })));
+        this.grupo.add(b);
+      }
+      etiqueta(c.id, 'etq-calicata', cx, -c.profundidad_m - 0.5, y0);
+    });
+    etiqueta(`Perfil ${s.perfil ?? '—'} · S = ${s.S ?? '—'}`, 'etq-suelo', x1 + 1, -1.5, y0);
   }
 
   private click(e: PointerEvent) {
@@ -110,6 +145,7 @@ export class Escena {
 
   private resize() {
     const { clientWidth: w, clientHeight: h } = this.host;
+    if (!w || !h) return; // pestaña oculta
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
