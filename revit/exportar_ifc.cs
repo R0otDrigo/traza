@@ -3,6 +3,7 @@
 // El Pset se define con un archivo de property sets de usuario (ExportUserDefinedPsets) escrito junto al IFC.
 // La exportación va en una transacción que se revierte: el modelo no cambia.
 using System;
+using System.Linq;
 using System.IO;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -10,13 +11,14 @@ using Newtonsoft.Json.Linq;
 
 public static class McpDynamicScript
 {
-    const string PSETS =
-        "PropertySet:\tNexoBIM\tI\tIfcWall,IfcWallStandardCase\n" +
-        "\tNexoBIM_Estado\tText\n\tNexoBIM_Motivo\tText\n\tNexoBIM_Rol\tText\n\tNexoBIM_Tramo_Lt\tReal\n\tNexoBIM_Ratio\tReal\n" +
-        "PropertySet:\tNexoBIM\tI\tIfcProject,IfcBuilding\n" +
-        "\tNexoBIM_Suelo_Obra\tText\n\tNexoBIM_Suelo_URL\tText\n\tNexoBIM_Suelo_Distancia_m\tReal\n\tNexoBIM_Suelo_Perfil\tText\n" +
-        "\tNexoBIM_S\tReal\n\tNexoBIM_S_Fuente\tText\n\tNexoBIM_Z\tReal\n\tNexoBIM_U\tReal\n\tNexoBIM_Norma\tText\n" +
-        "\tNexoBIM_Fecha_Verificacion\tText\n\tNexoBIM_Aprobado_Por\tText\n";
+    // Formato del exportador IFC de Revit: "PropertySet:<tab>Nombre<tab>I<tab>Entidades" y por propiedad
+    // "<tab>NombreIFC<tab>Tipo<tab>ParámetroRevit" (sin la 3.ª columna el exportador ignora el Pset).
+    static string Pset(string entidades, params string[] props) =>
+        $"PropertySet:\tNexoBIM\tI\t{entidades}\n" + string.Concat(props.Select(p => { var x = p.Split(':'); return $"\t{x[0]}\t{x[1]}\t{x[0]}\n"; }));
+    static readonly string PSETS =
+        Pset("IfcWall,IfcWallStandardCase", "NexoBIM_Estado:Text", "NexoBIM_Motivo:Text", "NexoBIM_Rol:Text", "NexoBIM_Tramo_Lt:Real", "NexoBIM_Ratio:Real") +
+        Pset("IfcProject,IfcBuilding", "NexoBIM_Suelo_Obra:Text", "NexoBIM_Suelo_URL:Text", "NexoBIM_Suelo_Distancia_m:Real", "NexoBIM_Suelo_Perfil:Text",
+             "NexoBIM_S:Real", "NexoBIM_S_Fuente:Text", "NexoBIM_Z:Real", "NexoBIM_U:Real", "NexoBIM_Norma:Text", "NexoBIM_Fecha_Verificacion:Text", "NexoBIM_Aprobado_Por:Text");
 
     public static object Run(UIApplication app, JObject data)
     {

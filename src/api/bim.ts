@@ -1,11 +1,12 @@
 // Rutas de la API del módulo bim (ver src/api/index.ts). Solo esta fase edita este archivo.
 // Fase 4 (ISO 19650): el ingeniero aprueba antes de escribir en el modelo y todo queda en el registro.
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Def } from './index.ts';
 import * as revit from '../revit/bridge.ts';
 import { verificarIfc } from '../bim/ifc.ts';
+import { psetNexoBIM } from '../bim/pset.ts';
 import { leer, guardar, registrar, type Estado } from '../pipeline.ts';
 import type { ValoresNexo } from '../revit/bridge.ts';
 
@@ -52,6 +53,8 @@ export const rutas: Record<string, Def> = {
     const nombre = (e.modelo?.documento ?? 'modelo').replace(/\.rvt$/i, '').replace(/[^\w-]+/g, '_');
     const ruta = fileURLToPath(new URL(`../../modelos/${nombre}-${new Date().toISOString().replace(/[:.]/g, '-')}.ifc`, import.meta.url));
     registrar(e, 'revit', 'Exportó IFC', await revit.exportarIfc(ruta));
+    const g = psetNexoBIM(readFileSync(ruta, 'utf8'));
+    if (g.objetos) { writeFileSync(ruta, g.texto); registrar(e, 'motor', 'Agrupó Pset NexoBIM en el IFC', `${g.objetos} objetos (propiedades NexoBIM_* de Revit, valores sin cambios)`); }
     e.ifc = await verificarIfc(ruta);
     registrar(e, 'motor', 'Verificó IFC', `${e.ifc.conPset}/${e.ifc.muros} muros con Pset NexoBIM${e.ifc.verificado ? '' : ' (incompleto)'}`);
     return guardar(e);
