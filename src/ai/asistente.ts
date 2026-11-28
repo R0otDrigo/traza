@@ -1,12 +1,11 @@
 // IA de NexoBIM: clasifica muros y ordena/explica opciones. NUNCA calcula densidades.
 // Sin credenciales (o si el modelo declina) usa reglas deterministas y lo declara en `fuente`.
-import Anthropic from '@anthropic-ai/sdk';
+
 import { z } from 'zod';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import { pedirJson, proveedor } from './llm.ts';
 import type { MuroRevit } from '../revit/bridge.ts';
 import type { Resultado, Opcion, Rol } from '../e070/types.ts';
 
-const MODELO = 'claude-opus-5-5';
 
 export interface Clasificacion { id: string; rol: Rol; confianza: number; razon: string; fuente: 'IA' | 'regla' }
 
@@ -23,13 +22,8 @@ export function clasificarPorReglas(m: MuroRevit): Clasificacion {
   return r('desconocido', 0.4, 'Sin evidencia suficiente: requiere decisión del ingeniero');
 }
 
-let _client: Anthropic | null | undefined;
-function cliente(): Anthropic | null {
-  if (_client !== undefined) return _client;
-  try { _client = process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN ? new Anthropic() : null; } catch { _client = null; }
-  return _client;
-}
-export const iaDisponible = () => cliente() !== null;
+/** Nombre del proveedor activo ('Claude' | 'Groq') o false = modo reglas. */
+export const iaDisponible = (): string | false => proveedor() ?? false;
 
 const SchemaClasif = z.object({
   muros: z.array(z.object({
@@ -48,31 +42,19 @@ No inventes datos. Si dudas, usa "desconocido": el ingeniero decide. La razón d
 
 export async function clasificar(muros: MuroRevit[]): Promise<Clasificacion[]> {
   const reglas = muros.map(clasificarPorReglas);
-  const c = cliente();
-  if (!c) return reglas;
+  if (!proveedor()) return reglas;
   const datos = muros.map(m => ({
     id: m.id, marca: m.marca, nivel: m.nivel, tipo: m.tipoRevit, material: m.material, t: m.t,
     L: Math.round(Math.hypot(m.x2 - m.x1, m.y2 - m.y1) * 100) / 100, eje: `${m.x1},${m.y1}→${m.x2},${m.y2}`,
     estructural: m.estructural, funcion: m.funcion, vanos: m.aberturas.length,
   }));
-  try {
-    const r = await c.messages.parse({
-      model: MODELO, max_tokens: 16000,
-      output_config: { effort: 'low', format: zodOutputFormat(SchemaClasif) },
-      system: SISTEMA,
-      messages: [{ role: 'user', content: `Clasifica estos ${datos.length} muros:\n${JSON.stringify(datos)}` }],
-    });
-    if (r.stop_reason === 'refusal' || !r.parsed_output) return reglas;
-    const porId = new Map(r.parsed_output.muros.map(x => [x.id, x]));
-    return reglas.map(base => {
-      const x = porId.get(base.id);
-      return x ? { id: base.id, rol: x.rol, confianza: Math.max(0, Math.min(1, x.confianza)), razon: x.razon, fuente: 'IA' as const } : base;
-    });
-  } catch (e) {
-    if (e instanceof Anthropic.APIError) console.error(`IA no disponible (${e.status}); se usan reglas.`);
-    else throw e;
-    return reglas;
-  }
+  const r = await pedirJson(SchemaClasif, SISTEMA, `Clasifica estos ${datos.length} muros:\n${JSON.stringify(datos)}`, 'low');
+  if (!r) return reglas;
+  const porId = new Map(r.muros.map(x => [x.id, x]));
+  return reglas.map(base => {
+    const x = porId.get(base.id);
+    return x ? { id: base.id, rol: x.rol, confianza: Math.max(0, Math.min(1, x.confianza)), razon: x.razon, fuente: 'IA' as const } : base;
+  });
 }
 
 /** Combinación mínima determinista (greedy por aporte) que cubre el déficit de cada nivel/dirección. */
@@ -110,24 +92,16 @@ export async function explicar(r: Resultado, notasArquitectura = ''): Promise<Ex
     recomendaciones: Object.values(plan).flat().map((o, i) => ({ opcionId: o.id, orden: i + 1, justificacion: `${o.detalle}: aporta ${o.deltaLt} m² de L·t.`, impactoArquitectonico: 'Por evaluar con arquitectura.' })),
     fuente: 'regla',
   };
-  const c = cliente();
-  if (!c || !fallos.length) return base;
-  try {
-    const resp = await c.messages.parse({
-      model: MODELO, max_tokens: 16000,
-      output_config: { effort: 'medium', format: zodOutputFormat(SchemaExpl) },
-      system: `${SISTEMA}
+  if (!proveedor() || !fallos.length) return base;
+  {
+    const resp = await pedirJson(SchemaExpl, `${SISTEMA}
 Ahora recibes el resultado del motor determinista E.070 y opciones de mejora con su aporte (deltaLt) ya calculado.
 Ordena las opciones para cubrir cada déficit con el menor impacto arquitectónico (no tapar fachadas ni circulaciones), explica por qué
 y advierte lo que el ingeniero debe verificar (confinamiento, continuidad vertical, cimentación). No recalcules ni cambies números.
 Solo puedes citar opcionId que existan en la lista.`,
-      messages: [{ role: 'user', content: JSON.stringify({ chequeosQueFallan: fallos, opciones: r.opciones, planMinimoDeterminista: plan, notasArquitectura }) }],
-    });
-    if (resp.stop_reason === 'refusal' || !resp.parsed_output) return base;
+      JSON.stringify({ chequeosQueFallan: fallos, opciones: r.opciones, planMinimoDeterminista: plan, notasArquitectura }));
+    if (!resp) return base;
     const ids = new Set(r.opciones.map(o => o.id));
-    return { ...resp.parsed_output, recomendaciones: resp.parsed_output.recomendaciones.filter(x => ids.has(x.opcionId)), fuente: 'IA' };
-  } catch (e) {
-    if (e instanceof Anthropic.APIError) return base;
-    throw e;
+    return { ...resp, recomendaciones: resp.recomendaciones.filter(x => ids.has(x.opcionId)), fuente: 'IA' };
   }
 }

@@ -1,16 +1,14 @@
 // Extracción del EMS: la IA (o reglas) TRANSCRIBE valores con página + texto literal; el código verifica cada cita.
 // Anti-invención: si el texto no está en esa página (o el número no está en el texto), valor null y motivo "no verificable".
 // Todo queda 'propuesto': el ingeniero aprueba campo por campo. Ningún número sale de la IA.
-import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import { pedirJson, proveedor, modeloIA } from './llm.ts';
 import { createHash } from 'node:crypto';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Calicata, PerfilE030, Riesgo, type Actor, type Cita, type EstudioSuelo } from '../contracts/index.ts';
 import { paginasRelevantes } from '../suelo/markdown.ts';
 
-const MODELO = 'claude-opus-5-5';
 const PAGINAS_POR_BLOQUE = 15;
 const CACHE_IA = join('fixtures', 'ai'); // respuestas de la IA (antes de verificar) para demo sin red
 
@@ -140,36 +138,17 @@ y no en kg/cm²), usa valor, pagina y textoLiteral null. Nivel freático "no enc
 Calicatas: id (C-1...), UTM solo si el documento dice WGS84 zona 19S (este, norte), profundidad y estratos con SUCS tal como figuran.
 Riesgos solo si el EMS afirma que el suelo es colapsable, expansivo o licuable. Recomendaciones: una por elemento, texto del EMS.`;
 
-let _client: Anthropic | null | undefined;
-function cliente(): Anthropic | null {
-  if (_client !== undefined) return _client;
-  try { _client = process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN ? new Anthropic() : null; } catch { _client = null; }
-  return _client;
-}
 
 /** Un bloque de páginas → respuesta de la IA (o caché en fixtures/ai/). null si no hay IA o falla. */
 async function pedirBloque(paginas: string[], numeros: number[]): Promise<RespuestaIA | null> {
   const contenido = numeros.map(n => `=== PÁGINA ${n} ===\n${paginas[n - 1]}`).join('\n\n');
-  const archivo = join(CACHE_IA, `suelo-${createHash('sha256').update(MODELO + SISTEMA + contenido).digest('hex').slice(0, 16)}.json`);
+  const archivo = join(CACHE_IA, `suelo-${createHash('sha256').update(modeloIA() + SISTEMA + contenido).digest('hex').slice(0, 16)}.json`);
   try { return SchemaIA.parse(JSON.parse(await readFile(archivo, 'utf8'))); } catch { /* sin caché */ }
-  const c = cliente();
-  if (!c) return null;
-  try {
-    const r = await c.messages.parse({
-      model: MODELO, max_tokens: 16000,
-      output_config: { effort: 'medium', format: zodOutputFormat(SchemaIA) },
-      system: SISTEMA,
-      messages: [{ role: 'user', content: contenido }],
-    });
-    if (r.stop_reason === 'refusal' || !r.parsed_output) return null;
-    await mkdir(CACHE_IA, { recursive: true });
-    await writeFile(archivo, JSON.stringify(r.parsed_output, null, 1));
-    return r.parsed_output;
-  } catch (e) {
-    if (!(e instanceof Anthropic.AnthropicError)) throw e; // APIError y fallos de parseo del SDK → reglas
-    console.error(`IA no disponible (${e instanceof Anthropic.APIError ? e.status : e.message}); se usan reglas.`);
-    return null;
-  }
+  const r = await pedirJson(SchemaIA, SISTEMA, contenido);
+  if (!r) return null;
+  await mkdir(CACHE_IA, { recursive: true });
+  await writeFile(archivo, JSON.stringify(r, null, 1));
+  return r;
 }
 
 /** Fusiona bloques y verifica cada cita. Escalares: el primero verificado; listas: concatenadas. */
@@ -196,8 +175,9 @@ export async function extraerEstudio(obraId: string, paginas: string[]): Promise
   const sel = paginasRelevantes(paginas);
   const numeros = sel.length ? sel : paginas.map((_, i) => i + 1).slice(0, PAGINAS_POR_BLOQUE);
   const bloques: RespuestaIA[] = [];
-  for (let i = 0; i < numeros.length; i += PAGINAS_POR_BLOQUE) {
-    const r = await pedirBloque(paginas, numeros.slice(i, i + PAGINAS_POR_BLOQUE));
+  const porBloque = proveedor() === 'Groq' ? 4 : PAGINAS_POR_BLOQUE; // Groq gratis: ~8k tokens/min por pedido
+  for (let i = 0; i < numeros.length; i += porBloque) {
+    const r = await pedirBloque(paginas, numeros.slice(i, i + porBloque));
     if (!r) return { estudio: extraerPorReglas(obraId, paginas), modo: 'reglas' };
     bloques.push(r);
   }

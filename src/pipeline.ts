@@ -32,7 +32,7 @@ export interface Estado {
   plan: Record<string, string[]>;           // nivel|dir → ids de opción
   aplicadas: string[];
   log: Evento[];
-  ia: boolean;
+  ia: string | false | boolean; // proveedor de IA activo o false (modo reglas)
 }
 
 export function leer(): Estado {

@@ -56,7 +56,7 @@ function render() {
   const p = proyecto();
   $('#doc').textContent = E?.modelo ? `${E.modelo.documento} · ${E.modelo.muros.length} muros · ${E.modelo.niveles.length} niveles` : 'Sin modelo leído';
   $('#ia').className = `ia ${E?.ia ? 'on' : 'off'}`;
-  $('#ia').textContent = (DEMO ? 'MODO DEMO · ' : '') + (E?.ia ? 'IA: Claude activo' : 'IA: modo reglas (sin API key)');
+  $('#ia').textContent = (DEMO ? 'MODO DEMO · ' : '') + (E?.ia ? `IA: ${E.ia === true ? 'Claude' : E.ia} activo` : 'IA: modo reglas (sin API key)');
   $('#pend').innerHTML = ultimoError ? `<b class="err">⚠ ${esc(ultimoError)}</b>` : E?.pendientes?.length ? `Pendiente: ${E.pendientes.map(esc).join(' · ')}` : E?.resultado ? 'Verificación oficial vigente' : '';
   pintarParametros();
   pintarMuros();
