@@ -203,7 +203,7 @@ Después se probó el **agente MCP** contra el mismo modelo: leyó, verificó y 
 - Panel, vigilante y CLI comparten **un solo cliente** rvt-mcp con cola: mientras `npm run dev` corre, la CLI y `compilar-cs` reciben "Revit está atendiendo a otro cliente". Detén el panel o usa sus botones.
 - Ahorro de tokens: cada PDF se convierte una vez a Markdown (`data/fuentes/md/`, OCR en caché) y a la IA solo van las ~20 páginas con datos de suelo; las citas apuntan a la página real.
 - El exportador IFC de Revit 2027 ignora los Psets de usuario: NexoBIM agrupa las `NexoBIM_*` en el Pset *NexoBIM* sobre el IFC exportado (sin cambiar valores) y lo verifica con web-ifc.
-- Los EMS reales bajados (Arequipa 2024) son estudios de **pavimentos**: traen S = 1.20, Z = 0.35 y perfil blando, pero no capacidad portante. NexoBIM deja esos campos vacíos; no los inventa.
+- Prueba real con Groq (EMS de AS-SM-40-2024-MPA-1, 303 págs escaneadas): perfil S2, S = 1.15, Df = 1.50 m, cimentación superficial, cemento tipo I o IP, todo con cita verificada. La presión admisible (OCR: "1.650 kg/em2") quedó citada pero sin valor: la IA no transcribe lo que el OCR deformó y el ingeniero la confirma a mano. Otros EMS bajados son de pavimentos (S = 1.20, sin capacidad portante).
 
 ## 8. Siguientes pasos (para el 28/11)
 - [ ] Excel del ingeniero y tabla de validación (`docs/VALIDACION.md`).

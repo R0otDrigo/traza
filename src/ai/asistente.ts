@@ -93,15 +93,36 @@ export async function explicar(r: Resultado, notasArquitectura = ''): Promise<Ex
     fuente: 'regla',
   };
   if (!proveedor() || !fallos.length) return base;
+  const datos = JSON.stringify({ chequeosQueFallan: fallos, opciones: r.opciones, planMinimoDeterminista: plan, notasArquitectura });
   {
     const resp = await pedirJson(SchemaExpl, `${SISTEMA}
 Ahora recibes el resultado del motor determinista E.070 y opciones de mejora con su aporte (deltaLt) ya calculado.
 Ordena las opciones para cubrir cada déficit con el menor impacto arquitectónico (no tapar fachadas ni circulaciones), explica por qué
-y advierte lo que el ingeniero debe verificar (confinamiento, continuidad vertical, cimentación). No recalcules ni cambies números.
+y advierte lo que el ingeniero debe verificar (confinamiento, continuidad vertical, cimentación). No recalcules ni cambies números:
+no escribas sumas, restas ni ningún número que no esté literalmente en los datos (cita solo los deltaLt y déficits que recibes).
 Solo puedes citar opcionId que existan en la lista.`,
-      JSON.stringify({ chequeosQueFallan: fallos, opciones: r.opciones, planMinimoDeterminista: plan, notasArquitectura }));
+      datos);
     if (!resp) return base;
-    const ids = new Set(r.opciones.map(o => o.id));
-    return { ...resp, recomendaciones: resp.recomendaciones.filter(x => ids.has(x.opcionId)), fuente: 'IA' };
+    return filtrarExplicacion(resp, base, r.opciones, datos);
   }
+}
+
+const numeros = (s: string) => (s.match(/\d+(?:[.,]\d+)?/g) ?? []).map(n => Number(n.replace(',', '.')));
+
+/** Guardia "ningún número sale de la IA": texto con un número que no está en los datos del motor → texto determinista. */
+export function filtrarExplicacion(resp: Omit<Explicacion, 'fuente'>, base: Explicacion, opciones: Opcion[], datos: string): Explicacion {
+  const ok = new Set(numeros(datos));
+  const limpio = (s: string) => numeros(s).every(n => ok.has(n));
+  const ids = new Set(opciones.map(o => o.id));
+  const porId = new Map(base.recomendaciones.map(x => [x.opcionId, x]));
+  const det = (id: string) => { const o = opciones.find(x => x.id === id)!; return `${o.detalle}: aporta ${o.deltaLt} m² de L·t.`; };
+  return {
+    resumen: limpio(resp.resumen) ? resp.resumen : base.resumen,
+    recomendaciones: resp.recomendaciones.filter(x => ids.has(x.opcionId)).map(x => ({
+      ...x,
+      justificacion: limpio(x.justificacion) ? x.justificacion : (porId.get(x.opcionId)?.justificacion ?? det(x.opcionId)),
+      impactoArquitectonico: limpio(x.impactoArquitectonico) ? x.impactoArquitectonico : 'Por evaluar con arquitectura.',
+    })),
+    fuente: 'IA',
+  };
 }
