@@ -1,5 +1,6 @@
 // Detector de Estudios de Mecánica de Suelos (EMS): puntaje por nombre de archivo + texto de las primeras páginas.
 import { readFileSync } from 'node:fs';
+import { WASM_PDFJS } from '../suelo/pdf.ts';
 
 const sinTildes = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -44,7 +45,7 @@ export interface TextoPdf { paginas: number; paginasEscaneadas: number[]; texto:
 /** Lee el texto de las primeras `max` páginas con pdfjs. Escaneada = menos de 30 caracteres de texto. */
 export async function leerPdf(ruta: string, max = 15): Promise<TextoPdf> {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  const tarea = pdfjs.getDocument({ data: new Uint8Array(readFileSync(ruta)), verbosity: 0 });
+  const tarea = pdfjs.getDocument({ data: new Uint8Array(readFileSync(ruta)), verbosity: 0, wasmUrl: WASM_PDFJS });
   const doc = await tarea.promise;
   const paginasEscaneadas: number[] = [];
   let texto = '';

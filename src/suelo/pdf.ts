@@ -6,16 +6,19 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { availableParallelism } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 export const CACHE_OCR = join('data', 'fuentes', 'ocr');
+// Decodificadores WASM de pdf.js (JBIG2/JPEG2000): sin esto, las imágenes de los escaneos del SEACE salen en blanco.
+export const WASM_PDFJS = fileURLToPath(new URL('../../node_modules/pdfjs-dist/wasm/', import.meta.url)).replaceAll('\\', '/');
 const MIN_CARACTERES = 50; // menos texto que esto (sin espacios) = página escaneada
 const HILOS = Math.max(1, Math.min(4, Math.floor(availableParallelism() / 2)));
 
 export async function leerPdf(ruta: string, opciones: { ocr?: boolean } = {}): Promise<{ paginas: string[]; escaneadas: number[]; noLegibles: number[] }> {
   const datos = await readFile(ruta);
   const huella = createHash('sha256').update(datos).digest('hex').slice(0, 16);
-  const tarea = getDocument({ data: new Uint8Array(datos), verbosity: 0 });
+  const tarea = getDocument({ data: new Uint8Array(datos), verbosity: 0, wasmUrl: WASM_PDFJS });
   const pdf = await tarea.promise;
   const paginas: string[] = [], escaneadas: number[] = [];
   for (let n = 1; n <= pdf.numPages; n++) {
