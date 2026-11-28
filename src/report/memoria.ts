@@ -5,6 +5,41 @@ import { proyectoDe } from '../pipeline.ts';
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
+const valor = (v: unknown) => v == null ? '<i>no encontrado</i>' : esc(typeof v === 'object' ? JSON.stringify(v) : v);
+const cita = (c: { pagina: number; textoLiteral: string; verificada: boolean; motivo?: string } | null) =>
+  !c ? '—' : `pág. ${c.pagina}: «${esc(c.textoLiteral.slice(0, 160))}» ${c.verificada ? '✓ verificada' : `⚠ ${esc(c.motivo ?? 'no verificada')}`}`;
+
+/** 2b. Suelo referencial: obra pública de origen, cada dato con su cita y estado, S y su cálculo. */
+export function seccionSuelo(e: Estado): string {
+  const s = e.suelo;
+  if (!s?.estudio) return `<h2>2b. Suelo referencial</h2><p>No se usó un estudio de suelos referencial. S = ${e.parametros.S} (${esc((e.parametros as any).S_fuente ?? 'ingresado por el ingeniero')}).</p>`;
+  const est = s.estudio, r = s.resultado;
+  const obra = r?.obrasCercanas.find(o => o.obra.id === est.obraId);
+  const filas = Object.entries(est as Record<string, any>).filter(([k]) => k !== 'obraId').flatMap(([k, v]): [string, any][] => (Array.isArray(v) ? v.map((c, i) => [`${k} ${i + 1}`, c]) : [[k, v]]))
+    .map(([k, c]: any) => `<tr><td>${esc(k)}</td><td>${valor(c.valor)}</td><td>${esc(c.estado)} (${esc(c.por)})</td><td><small>${cita(c.cita)}</small></td></tr>`).join('');
+  return `<h2>2b. Suelo referencial</h2>
+  <div class="aviso">Dato referencial de una obra pública cercana. No reemplaza el Estudio de Mecánica de Suelos del terreno exigido por la E.050.</div>
+  <table><tr><th>Obra</th><td>${esc(obra?.obra.descripcion ?? est.obraId)}</td></tr><tr><th>Entidad</th><td>${esc(obra?.obra.entidad ?? '—')} · ${esc(obra?.obra.nomenclatura ?? '')}</td></tr>
+  <tr><th>Fuente</th><td>${obra ? `<a href="${esc(obra.obra.urlFicha)}">${esc(obra.obra.urlFicha)}</a>` : esc(s.documento?.url ?? '—')}</td></tr>
+  <tr><th>Distancia al lote</th><td>${r?.distancia_m != null ? `${Math.round(r.distancia_m)} m` : '—'}</td></tr>
+  <tr><th>Extracción</th><td>${esc(s.modo ?? '—')} · ${s.documento?.paginas ?? '?'} páginas</td></tr></table>
+  <table><tr><th>Campo</th><th>Valor</th><th>Estado</th><th>Cita</th></tr>${filas}</table>
+  <p><b>S del motor:</b> ${r?.S_motor ?? '— (perfil no aprobado)'} · fuente: ${esc(r?.S_fuente ?? '—')} · S usado en la verificación: <b>${e.parametros.S}</b></p>
+  ${r?.advertencias.length ? `<ul>${r.advertencias.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}`;
+}
+
+/** 5b. BIM: qué se leyó y escribió en el modelo, versiones e IFC. */
+export function seccionBim(e: Estado): string {
+  const v = e.versiones ?? [], ifc = e.ifc;
+  const escrito = e.log.filter(l => l.quien === 'revit' || /parámetros|IFC|Aplicó opción/i.test(l.accion));
+  return `<h2>5b. BIM: el modelo como fuente y destino</h2>
+  <p><b>Leído del modelo:</b> ${e.modelo ? `${esc(e.modelo.documento)} · ${e.modelo.muros.length} muros (ejes, espesor, altura, tipo, vanos) · ${e.modelo.niveles.length} niveles con área de losas` : '—'}.</p>
+  <p><b>Escrito en el modelo</b> (cada operación aprobada y reversible con Deshacer):</p>
+  <ul>${escrito.slice(0, 20).map(l => `<li>${esc(new Date(l.t).toLocaleString('es-PE'))} · ${esc(l.accion)}: ${esc(l.detalle)}</li>`).join('') || '<li>Nada escrito todavía.</li>'}</ul>
+  <p><b>IFC exportado:</b> ${ifc ? `${esc(ifc.ruta)} · ${ifc.muros} muros, ${ifc.conPset} con Pset NexoBIM · ${ifc.verificado ? 'verificado' : 'sin verificar'}` : 'no exportado'}.</p>
+  ${v.length ? `<table><tr><th>Versión del modelo</th><th>Fecha</th><th>Cumplimiento</th><th>Nota</th></tr>${v.slice(0, 10).map(x => `<tr><td><code>${esc(x.huella.slice(0, 12))}</code></td><td>${esc(new Date(x.en).toLocaleString('es-PE'))}</td><td>${x.cumplimiento.map(c => `${esc(c.nivel)} ${c.dir}: ${c.cumple ? '✓' : '✗'}`).join(' · ')}</td><td>${esc(x.nota)}</td></tr>`).join('')}</table>` : ''}`;
+}
+
 export function memoriaHtml(e: Estado): string {
   if (!e.resultado || !e.modelo) return '<p>No hay una verificación oficial. Ejecuta “Verificar” primero.</p>';
   const r = verificar(proyectoDe(e)); // se recalcula: la memoria siempre coincide con el motor
@@ -40,6 +75,8 @@ export function memoriaHtml(e: Estado): string {
   <h2>2. Parámetros (aprobados por el ingeniero: ${e.parametros.aprobados ? 'sí' : 'NO'})</h2>
   <table><tr><th>Z</th><th>U</th><th>S</th><th>N</th><th>Z·U·S·N/56</th></tr><tr><td>${p.Z}</td><td>${p.U}</td><td>${p.S}</td><td>${p.N}</td><td><b>${p.requerido}</b></td></tr></table>
 
+  ${seccionSuelo(e)}
+
   <h2>3. Resultados por nivel y dirección</h2>
   <table><tr><th>Nivel</th><th>Dir.</th><th>Σ L·t (m²)</th><th>Ap (m²)</th><th>Densidad</th><th>Requerido</th><th>Estado</th><th>Sustitución</th></tr>
   ${r.chequeos.map(c => `<tr><td>${esc(c.nivel)}</td><td>${c.dir}</td><td>${c.sumaLt}</td><td>${c.Ap}</td><td>${c.densidad}</td><td>${c.requerido}</td><td class="${c.cumple ? 'ok' : 'mal'}">${c.cumple ? 'Cumple' : `No cumple (faltan ${c.deficitLt} m²)`}</td><td><small>${esc(c.sustitucion)}</small></td></tr>`).join('')}</table>
@@ -52,6 +89,8 @@ export function memoriaHtml(e: Estado): string {
   <table><tr><th>Opción</th><th>Aporte (m²)</th><th>Detalle</th><th>Justificación</th><th>Aplicada</th></tr>
   ${r.opciones.map(o => { const x = e.explicacion?.recomendaciones.find(z => z.opcionId === o.id); return `<tr><td>${esc(o.nivel)} ${o.dir}</td><td>${o.deltaLt}</td><td>${esc(o.detalle)}</td><td>${esc(x?.justificacion ?? '')}</td><td>${e.aplicadas.includes(o.id) ? 'Sí' : ''}</td></tr>`; }).join('') || '<tr><td colspan="5">Sin opciones: el diseño cumple.</td></tr>'}</table>
   ${e.aplicadas.length ? `<p>Opciones ya aplicadas en el modelo: ${e.aplicadas.map(esc).join(', ')}</p>` : ''}
+
+  ${seccionBim(e)}
 
   <h2>6. Advertencias y límites de uso</h2>
   <ul>${r.advertencias.map(a => `<li>${esc(a)}</li>`).join('')}
