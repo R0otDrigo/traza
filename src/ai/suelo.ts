@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Calicata, PerfilE030, Riesgo, type Actor, type Cita, type EstudioSuelo } from '../contracts/index.ts';
+import { paginasRelevantes } from '../suelo/markdown.ts';
 
 const MODELO = 'claude-opus-5-5';
 const PAGINAS_POR_BLOQUE = 15;
@@ -147,8 +148,8 @@ function cliente(): Anthropic | null {
 }
 
 /** Un bloque de páginas → respuesta de la IA (o caché en fixtures/ai/). null si no hay IA o falla. */
-async function pedirBloque(paginas: string[], desde: number): Promise<RespuestaIA | null> {
-  const contenido = paginas.map((p, i) => `=== PÁGINA ${desde + i} ===\n${p}`).join('\n\n');
+async function pedirBloque(paginas: string[], numeros: number[]): Promise<RespuestaIA | null> {
+  const contenido = numeros.map(n => `=== PÁGINA ${n} ===\n${paginas[n - 1]}`).join('\n\n');
   const archivo = join(CACHE_IA, `suelo-${createHash('sha256').update(MODELO + SISTEMA + contenido).digest('hex').slice(0, 16)}.json`);
   try { return SchemaIA.parse(JSON.parse(await readFile(archivo, 'utf8'))); } catch { /* sin caché */ }
   const c = cliente();
@@ -191,9 +192,12 @@ export function verificarRespuestas(obraId: string, paginas: string[], bloques: 
 }
 
 export async function extraerEstudio(obraId: string, paginas: string[]): Promise<{ estudio: EstudioSuelo; modo: 'IA' | 'reglas' }> {
+  // Ahorro de tokens: solo las páginas con datos de suelo (las citas siguen apuntando a la página real).
+  const sel = paginasRelevantes(paginas);
+  const numeros = sel.length ? sel : paginas.map((_, i) => i + 1).slice(0, PAGINAS_POR_BLOQUE);
   const bloques: RespuestaIA[] = [];
-  for (let i = 0; i < paginas.length; i += PAGINAS_POR_BLOQUE) {
-    const r = await pedirBloque(paginas.slice(i, i + PAGINAS_POR_BLOQUE), i + 1);
+  for (let i = 0; i < numeros.length; i += PAGINAS_POR_BLOQUE) {
+    const r = await pedirBloque(paginas, numeros.slice(i, i + PAGINAS_POR_BLOQUE));
     if (!r) return { estudio: extraerPorReglas(obraId, paginas), modo: 'reglas' };
     bloques.push(r);
   }

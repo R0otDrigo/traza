@@ -13,11 +13,21 @@ const ENTIDADES: { nombre: string }[] = JSON.parse(readFileSync(fileURLToPath(ne
 const resolverEntidades = (e: string) => e === 'todas' ? ENTIDADES.map(x => x.nombre)
   : [ENTIDADES.find(x => x.nombre.includes(e.toUpperCase()))?.nombre ?? e.toUpperCase()];
 
+async function aMd(obraId: string) {
+  const d = documentosEMS(obraId)[0];
+  if (!d) return;
+  const { aMarkdown, paginasRelevantes } = await import('../suelo/markdown.ts');
+  const t0 = Date.now();
+  const r = await aMarkdown(d.archivoLocal);
+  const chars = r.paginas.join('').length;
+  console.log(`  md ${r.desdeCache ? '(caché)' : `(${((Date.now() - t0) / 1000).toFixed(0)} s)`}: ${r.paginas.length} págs, ${chars} caracteres, ${paginasRelevantes(r.paginas).length} páginas relevantes → ${r.rutaMd}`);
+}
+
 export async function suelo(cmd: string, argv: string[]): Promise<void> {
   const { values: v } = parseArgs({ args: argv, strict: false, options: {
     entidad: { type: 'string' }, anios: { type: 'string' }, max: { type: 'string' }, obra: { type: 'string' }, 'max-mb': { type: 'string' },
     lat: { type: 'string' }, lon: { type: 'string' }, pdf: { type: 'string' }, url: { type: 'string' }, nomenclatura: { type: 'string' },
-    anio: { type: 'string' }, descripcion: { type: 'string' }, precision: { type: 'string' } } });
+    anio: { type: 'string' }, descripcion: { type: 'string' }, precision: { type: 'string' }, 'sin-md': { type: 'boolean' } } });
   const s = (k: string) => v[k] as string | undefined;
 
   switch (cmd) {
@@ -38,7 +48,15 @@ export async function suelo(cmd: string, argv: string[]): Promise<void> {
     }
     case 'suelo:descargar': {
       const ids = s('obra') ? [s('obra')!] : obrasPorDescargar();
-      for (const id of ids) { console.log(`${leerObra(id)?.nomenclatura ?? id}`); await descargarObra(id, s('max-mb') ? +s('max-mb')! : undefined); }
+      for (const id of ids) {
+        console.log(`${leerObra(id)?.nomenclatura ?? id}`);
+        await descargarObra(id, s('max-mb') ? +s('max-mb')! : undefined);
+        if (!v['sin-md']) await aMd(id); // el EMS queda listo en Markdown: la IA no vuelve a leer el PDF
+      }
+      break;
+    }
+    case 'suelo:md': { // convierte a Markdown (con OCR) el mejor EMS de cada obra; en caché, reanudable
+      for (const id of s('obra') ? [s('obra')!] : listarObras().filter(x => x.tieneEMS).map(x => x.obra.id)) await aMd(id);
       break;
     }
     case 'suelo:indexar': console.log(`${await indexar()} archivos re-analizados`); break;

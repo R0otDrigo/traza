@@ -6,7 +6,7 @@ import type { Def } from './index.ts';
 import { leer, guardar, registrar, type Estado } from '../pipeline.ts';
 import { DocumentoEMS, ObraPublica } from '../contracts/index.ts';
 import { listarObras, documentosEMS, guardarObra, guardarDocumento, actualizarUbicacion } from '../fuentes/indice.ts';
-import { leerPdf } from '../suelo/pdf.ts';
+import { aMarkdown } from '../suelo/markdown.ts';
 import { extraerEstudio } from '../ai/suelo.ts';
 import { ubicarObra } from '../suelo/ubicacion.ts';
 import { decidirCampo, resultadoSuelo, conS } from '../suelo/flujo.ts';
@@ -20,7 +20,7 @@ function recalcular(e: Estado) {
 const mejorEMS = (obraId: string) => documentosEMS(obraId).sort((a, b) => b.puntajeEMS - a.puntajeEMS)[0];
 
 async function extraer(e: Estado, doc: DocumentoEMS, paginas?: string[]) {
-  paginas ??= (await leerPdf(doc.archivoLocal)).paginas;
+  paginas ??= (await aMarkdown(doc.archivoLocal)).paginas; // Markdown en caché: OCR una sola vez
   const { estudio, modo } = await extraerEstudio(doc.obraId, paginas);
   const obra = listarObras().find(o => o.obra.id === doc.obraId)?.obra;
   if (obra && !obra.ubicacion) { const u = await ubicarObra(estudio, obra.distrito ?? undefined); if (u) actualizarUbicacion(obra.id, u); }
@@ -50,7 +50,7 @@ export const rutas: Record<string, Def> = {
 
   'POST suelo/subir': { fn: async ({ archivoLocal, url, lat, lon, entidad, descripcion }) => {
     const sha256 = createHash('sha256').update(readFileSync(archivoLocal)).digest('hex');
-    const pdf = await leerPdf(archivoLocal);
+    const pdf = await aMarkdown(archivoLocal);
     const obra = ObraPublica.parse({
       id: `manual-${sha256.slice(0, 12)}`, entidad: entidad || 'manual', nomenclatura: 'manual', anio: new Date().getFullYear(), objeto: 'Obra',
       descripcion: descripcion || archivoLocal, urlFicha: url || pathToFileURL(archivoLocal).href, distrito: null,

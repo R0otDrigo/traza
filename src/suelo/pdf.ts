@@ -1,60 +1,74 @@
 // Lectura de PDF de EMS: texto por página (pdfjs) y OCR (tesseract, 'spa') solo en las páginas escaneadas.
 // Caché en data/fuentes/ocr/ (fuera de git): texto OCR por página y spa.traineddata, que tesseract descarga
 // una sola vez del CDN. Sin internet y sin caché, la página queda en `noLegibles` con texto vacío.
+// El OCR corre con varios workers en paralelo (los EMS reales del SEACE llegan escaneados, hasta 300+ páginas).
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { availableParallelism } from 'node:os';
 import { join } from 'node:path';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 export const CACHE_OCR = join('data', 'fuentes', 'ocr');
 const MIN_CARACTERES = 50; // menos texto que esto (sin espacios) = página escaneada
+const HILOS = Math.max(1, Math.min(4, Math.floor(availableParallelism() / 2)));
 
 export async function leerPdf(ruta: string, opciones: { ocr?: boolean } = {}): Promise<{ paginas: string[]; escaneadas: number[]; noLegibles: number[] }> {
   const datos = await readFile(ruta);
   const huella = createHash('sha256').update(datos).digest('hex').slice(0, 16);
   const tarea = getDocument({ data: new Uint8Array(datos), verbosity: 0 });
   const pdf = await tarea.promise;
-  const paginas: string[] = [], escaneadas: number[] = [], noLegibles: number[] = [];
+  const paginas: string[] = [], escaneadas: number[] = [];
   for (let n = 1; n <= pdf.numPages; n++) {
-    const pag = await pdf.getPage(n);
-    const { items } = await pag.getTextContent();
-    let texto = items.map(i => ('str' in i ? i.str + (i.hasEOL ? '\n' : ' ') : '')).join('').trim();
-    if (texto.replace(/\s/g, '').length < MIN_CARACTERES) {
-      escaneadas.push(n);
-      const ocr = opciones.ocr === false ? null : await ocrPagina(pag, `${huella}-p${n}`);
-      if (ocr === null) noLegibles.push(n);
-      else texto = `${texto}\n${ocr}`.trim();
-    }
+    const { items } = await (await pdf.getPage(n)).getTextContent();
+    const texto = items.map(i => ('str' in i ? i.str + (i.hasEOL ? '\n' : ' ') : '')).join('').trim();
+    if (texto.replace(/\s/g, '').length < MIN_CARACTERES) escaneadas.push(n);
     paginas.push(texto);
   }
+  const noLegibles: number[] = opciones.ocr === false ? [...escaneadas] : [];
+  if (opciones.ocr !== false && escaneadas.length) {
+    const ocr = await ocrPaginas(pdf, escaneadas, huella);
+    for (const n of escaneadas) {
+      const t = ocr.get(n);
+      if (t == null) noLegibles.push(n); else paginas[n - 1] = `${paginas[n - 1]}\n${t}`.trim();
+    }
+  }
   await tarea.destroy();
-  await cerrarOcr();
   return { paginas, escaneadas, noLegibles };
 }
 
-let worker: import('tesseract.js').Worker | null = null;
-
-async function ocrPagina(pag: any, clave: string): Promise<string | null> {
-  const archivo = join(CACHE_OCR, `${clave}.txt`);
-  try { return await readFile(archivo, 'utf8'); } catch { /* sin caché */ }
-  try {
-    const { createCanvas } = await import('@napi-rs/canvas');
-    const viewport = pag.getViewport({ scale: 2.5 });
-    const canvas = createCanvas(viewport.width, viewport.height);
-    await pag.render({ canvas, canvasContext: canvas.getContext('2d'), viewport }).promise;
-    await mkdir(CACHE_OCR, { recursive: true });
-    if (!worker) {
-      const { createWorker } = await import('tesseract.js');
-      worker = await createWorker('spa', 1, { cachePath: CACHE_OCR });
-    }
-    const { data } = await worker.recognize(canvas.toBuffer('image/png'));
-    await writeFile(archivo, data.text);
-    return data.text;
-  } catch (e) {
-    console.error(`OCR no disponible para la página (${(e as Error).message}); se marca como no legible.`);
-    await cerrarOcr();
-    return null;
+/** OCR de varias páginas con un pool de workers. Cada página se guarda en caché apenas termina (reanudable). */
+async function ocrPaginas(pdf: any, numeros: number[], huella: string): Promise<Map<number, string | null>> {
+  const out = new Map<number, string | null>();
+  const pendientes: number[] = [];
+  for (const n of numeros) {
+    try { out.set(n, await readFile(join(CACHE_OCR, `${huella}-p${n}.txt`), 'utf8')); } catch { pendientes.push(n); }
   }
+  if (!pendientes.length) return out;
+  await mkdir(CACHE_OCR, { recursive: true });
+  let workers: import('tesseract.js').Worker[] = [];
+  try {
+    const { createWorker } = await import('tesseract.js');
+    const { createCanvas } = await import('@napi-rs/canvas');
+    workers = await Promise.all(Array.from({ length: Math.min(HILOS, pendientes.length) }, () => createWorker('spa', 1, { cachePath: CACHE_OCR })));
+    let hechas = 0;
+    const cola = [...pendientes];
+    await Promise.all(workers.map(async w => {
+      for (let n = cola.shift(); n !== undefined; n = cola.shift()) {
+        const pag = await pdf.getPage(n);
+        const viewport = pag.getViewport({ scale: 2 });
+        const canvas = createCanvas(viewport.width, viewport.height);
+        await pag.render({ canvas, canvasContext: canvas.getContext('2d'), viewport }).promise;
+        const { data } = await w.recognize(canvas.toBuffer('image/png'));
+        await writeFile(join(CACHE_OCR, `${huella}-p${n}.txt`), data.text);
+        out.set(n, data.text);
+        if (++hechas % 10 === 0 || hechas === pendientes.length) console.error(`OCR ${hechas}/${pendientes.length} páginas`);
+      }
+    }));
+  } catch (e) {
+    console.error(`OCR no disponible (${(e as Error).message}); las páginas sin texto quedan como no legibles.`);
+    for (const n of pendientes) if (!out.has(n)) out.set(n, null);
+  } finally {
+    await Promise.all(workers.map(w => w.terminate().catch(() => {})));
+  }
+  return out;
 }
-
-async function cerrarOcr() { await worker?.terminate().catch(() => {}); worker = null; }
