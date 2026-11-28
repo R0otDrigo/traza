@@ -130,14 +130,18 @@ Problemas que incluye, todos típicos de obra:
 ---
 
 ## 5. Guion de la demo (5 minutos)
-1. **Problema (40 s):** el ingeniero civil cuenta cuánto se demora repetir la verificación cada vez que cambia la arquitectura.
-2. **Revit:** el edificio está abierto. En el panel se pulsa **"Leer modelo de Revit"**. La IA clasifica los 28 muros y muestra la razón de cada uno, y el ingeniero corrige uno y aprueba Z, U y S.
-3. **"Verificar y pintar Revit":** Revit se pinta (rojo: no cuenta; azul: opción propuesta) y el panel muestra los pisos 2–4 en rojo en la dirección X.
-4. **Clic en el muro rojo del piso 3:** aparece *"sin continuidad vertical"*. El ingeniero lo explica.
-5. **"Simular plan mínimo":** las barras se ponen en verde al instante, sin tocar Revit.
-6. **"Aplicar en Revit"** sobre dos opciones: el modelo cambia (tipo de muro y posición), se vuelve a verificar y el registro muestra quién hizo qué.
-7. **Memoria:** se abre el PDF con la fórmula sustituida, los motivos de exclusión y la línea de firma del ingeniero.
-8. **Opcional, el efecto "wow":** en Claude Code se escribe *"¿cumple el edificio? propón el refuerzo de menor impacto, sin tocar la fachada"* y el agente usa las herramientas `nexobim_*`.
+1. **Problema (40 s):** cada cambio de arquitectura obliga a repetir la verificación, y casi nunca se mira el suelo.
+2. **Suelo (pestaña Suelo):** se marca el lote en el mapa. NexoBIM lista las obras públicas cercanas del índice SEACE/INFObras con EMS
+   descargado, se elige una y la IA transcribe los datos **con página y texto literal**; cada cita se verifica contra el PDF
+   (✓ verificada / ⚠ no verificable). El ingeniero aprueba campo por campo y pulsa "Usar S": el **motor** toma S de la tabla E.030.
+   Aviso fijo: *dato referencial, no reemplaza el EMS del terreno (E.050)*.
+3. **Revit:** "Leer modelo" → la IA clasifica los muros con su razón → el ingeniero corrige y aprueba Z, U, S.
+4. **"Verificar y pintar Revit":** Revit se pinta; el panel muestra qué nivel/dirección no cumple y por qué (sin continuidad, L < 1.20 m, t < h/20).
+5. **En vivo:** se mueve una ventana o se borra un muro en Revit → en ~5 s el vigilante detecta el cambio, vuelve a verificar,
+   muestra el aviso en el panel y una notificación de Windows ("Nivel 2 X dejó de cumplir"). No pinta Revit sin permiso.
+6. **"Aplicar opción" (con aprobación):** el modelo cambia (Ctrl+Z lo revierte), se vuelve a verificar, el registro dice quién hizo qué.
+7. **BIM:** "Escribir parámetros NexoBIM_*" y "Exportar IFC": el IFC4 lleva el Pset *NexoBIM* en los 54 muros y se verifica al leerlo.
+8. **Memoria:** fórmula sustituida, suelo referencial con citas, versiones del modelo y línea de firma del ingeniero.
 
 Plan B: video grabado de la demo y `estado.json` guardado, para que el panel funcione sin Revit.
 
@@ -150,7 +154,7 @@ Plan B: video grabado de la demo y `estado.json` guardado, para que el panel fun
    - preparar el **Excel de referencia**;
    - confirmar Z, U y S con la E.030 vigente;
    - definir cómo tratar las placas de concreto (t·Ec/Em, no implementado).
-2. **API key de Claude:** sin `ANTHROPIC_API_KEY` el sistema funciona con reglas, pero para mostrar IA de verdad hay que ponerla en `.env` o en el entorno. **No se sube al repo.**
+2. **IA:** `ANTHROPIC_API_KEY` (Claude) o `GROQ_API_KEY` (Groq, `openai/gpt-oss-120b`) en `.env`. Sin clave funciona con reglas y lo dice en pantalla. **`.env` no se sube al repo.**
 3. **Revit en la laptop de la demo:**
    - Revit 2027 con el add-in rvt-mcp instalado;
    - iniciar RvtMcp desde Complementos;
@@ -168,6 +172,12 @@ npm test                 # motor E.070 (19 tests)
 npm run dev              # panel en http://localhost:5173
 node scripts/nexobim.ts leer | params 0.35 1 1.15 | aceptar | verificar | aplicar <id>   # CLI
 node scripts/compilar-cs.ts   # compila los scripts C# dentro de Revit (sin ejecutar)
+node scripts/nexobim.ts suelo:buscar --entidad arequipa --anios 2024 --max 5   # SEACE (Edge visible; si hay captcha, lo resuelves tú)
+node scripts/nexobim.ts suelo:descargar     # baja expedientes, detecta el EMS y lo deja en Markdown (OCR, caché)
+node scripts/nexobim.ts suelo:md            # (re)convierte a Markdown los EMS ya bajados
+node scripts/nexobim.ts suelo:ubicar        # coordenadas desde INFObras
+node scripts/nexobim.ts suelo:cercanos --lat -16.3989 --lon -71.5369
+node scripts/nexobim.ts suelo:estado
 ```
 En Revit: abrir un proyecto, ir a Complementos → RvtMcp → iniciar. Para la demo, en un proyecto vacío, pulsar "0 · Crear caso de prueba".
 
@@ -190,10 +200,16 @@ Después se probó el **agente MCP** contra el mismo modelo: leyó, verificó y 
 - Si Revit tiene un comando activo (por ejemplo "Colocar muro") o un diálogo abierto, no acepta órdenes: hay que presionar Esc.
 - Con dos Revit abiertos, NexoBIM usa el que tiene un proyecto abierto. Para forzar uno, ejecuta `$env:NEXOBIM_REVIT_PID = "<pid>"` antes de `npm run dev`.
 - La primera vez se crea `modelos/_base-vacio.rvt` (tarda ~1 min). Después, cada caso nuevo se crea en segundos.
+- Panel, vigilante y CLI comparten **un solo cliente** rvt-mcp con cola: mientras `npm run dev` corre, la CLI y `compilar-cs` reciben "Revit está atendiendo a otro cliente". Detén el panel o usa sus botones.
+- Ahorro de tokens: cada PDF se convierte una vez a Markdown (`data/fuentes/md/`, OCR en caché) y a la IA solo van las ~20 páginas con datos de suelo; las citas apuntan a la página real.
+- El exportador IFC de Revit 2027 ignora los Psets de usuario: NexoBIM agrupa las `NexoBIM_*` en el Pset *NexoBIM* sobre el IFC exportado (sin cambiar valores) y lo verifica con web-ifc.
+- Los EMS reales bajados (Arequipa 2024) son estudios de **pavimentos**: traen S = 1.20, Z = 0.35 y perfil blando, pero no capacidad portante. NexoBIM deja esos campos vacíos; no los inventa.
 
 ## 8. Siguientes pasos (para el 28/11)
 - [ ] Excel del ingeniero y tabla de validación (`docs/VALIDACION.md`).
 - [ ] Probar con un modelo de vivienda real del equipo o de un proyecto académico.
-- [ ] Botón propio en la cinta de Revit (ToolBaker de rvt-mcp) para lanzar la verificación sin salir de Revit.
-- [ ] Revisión en vivo: volver a verificar automáticamente cuando cambia un muro.
+- [x] Botón propio en la cinta de Revit (ToolBaker de rvt-mcp): `revit/boton_verificar.cs`, `revit/boton_panel.cs`.
+- [x] Revisión en vivo: el vigilante vuelve a verificar cuando cambia el modelo y notifica en Windows.
+- [x] Suelo referencial desde obras públicas cercanas (SEACE + INFObras) con citas verificadas.
+- [x] Parámetros NexoBIM_* en Revit, IFC4 con Pset NexoBIM y versiones del modelo.
 - [ ] Verificación de esfuerzo axial (E.070 Art. 19.1.b) como segundo chequeo.

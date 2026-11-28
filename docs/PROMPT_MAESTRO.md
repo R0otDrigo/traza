@@ -7,7 +7,9 @@
 /ponytail full
 
 Lee CLAUDE.md y docs/PLAN_RETO2.md. NexoBIM ya funciona de punta a punta:
-Revit (rvt-mcp) → IA clasifica muros → ingeniero aprueba → motor E.070 → IA explica → Revit pintado → aplicar opciones.
+Suelo referencial (SEACE/INFObras → EMS en Markdown → IA transcribe con citas verificadas → ingeniero aprueba → motor elige S)
+→ Revit (rvt-mcp) → IA clasifica muros → ingeniero aprueba → motor E.070 → IA explica → Revit pintado → aplicar opciones
+→ vigilante en vivo + notificaciones → parámetros NexoBIM_* + IFC con Pset NexoBIM + versiones → memoria.
 
 Reglas: la IA nunca calcula, ningún cambio en Revit sin aprobación, todo queda en el registro de decisiones.
 Mantén los tests en verde (npm test) y compila los C# con node scripts/compilar-cs.ts antes de ejecutarlos.
@@ -15,7 +17,8 @@ Mantén los tests en verde (npm test) y compila los C# con node scripts/compilar
 Usa estos subagentes (.claude/agents) en paralelo cuando no toquen los mismos archivos:
 - motor-estructural (src/e070): verificación de esfuerzo axial E.070 19.1.b como segundo chequeo, con tests.
 - qa-validacion: docs/VALIDACION.md comparando el motor con fixtures/referencia.csv (Excel del ingeniero civil).
-- revit-bridge (revit/): botón propio en la cinta de Revit (ToolBaker de rvt-mcp) y revisión en vivo al editar muros.
+- fuentes-publicas (src/fuentes): ampliar el índice SEACE a más distritos y años; priorizar EMS de edificaciones (no pavimentos).
+- revit-bridge (revit/): tabiques y placas t·Ec/Em; probar los botones ToolBaker en la laptop de la demo.
 - ui-trazabilidad (src/app): pulir el panel (frontend-design, dataviz), modo presentación a pantalla completa.
 - memoria-presentacion: presentación ejecutiva (skill pptx o artefacto de slides) con capturas de Revit.
 Skills: threejs-* para el 3D, claude-api para la IA, nexobim-e070 para operar el agente.
@@ -31,4 +34,4 @@ Primero dime qué falta para la demo del 28/11 según la sección 8 del plan y p
   `/plugin marketplace add DietrichGebert/ponytail` y luego `/plugin install ponytail@ponytail`.
 
 ## IA real (opcional pero recomendado para la demo)
-Define `ANTHROPIC_API_KEY` en el entorno antes de `npm run dev`. Sin ella, NexoBIM clasifica y explica con reglas deterministas y lo indica en pantalla ("IA: modo reglas").
+Pon `ANTHROPIC_API_KEY` o `GROQ_API_KEY` en `.env` (copia `.env.example`) antes de `npm run dev`. Sin clave, NexoBIM clasifica, extrae y explica con reglas deterministas y lo indica en pantalla ("IA: modo reglas"). Las respuestas de la IA quedan en `fixtures/ai/` (demo sin red).
