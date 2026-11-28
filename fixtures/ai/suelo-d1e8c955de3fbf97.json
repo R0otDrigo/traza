@@ -1,0 +1,60 @@
+{
+ "fecha": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "calicatas": [],
+ "perfilE030": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "S_reportadoEMS": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "capacidadPortante_kgcm2": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "Df_m": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "tipoCimentacionRecomendada": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "nivelFreatico_m": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "sulfatos_ppm": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "cloruros_ppm": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "salesSolubles_ppm": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "cementoRecomendado": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "riesgos": [],
+ "recomendacionesEMS": []
+}

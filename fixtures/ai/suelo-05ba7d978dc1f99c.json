@@ -1,0 +1,60 @@
+{
+ "fecha": {
+  "valor": "JunIO2074",
+  "pagina": 160,
+  "textoLiteral": "Fecha ——_ :[JunIO2074"
+ },
+ "calicatas": [],
+ "perfilE030": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "S_reportadoEMS": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "capacidadPortante_kgcm2": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "Df_m": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "tipoCimentacionRecomendada": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "nivelFreatico_m": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "sulfatos_ppm": {
+  "valor": 157.45,
+  "pagina": 161,
+  "textoLiteral": "Concentracióndelión Sulfato ppm) 157.45"
+ },
+ "cloruros_ppm": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "salesSolubles_ppm": {
+  "valor": 0.05,
+  "pagina": 160,
+  "textoLiteral": "Contenido de Sales Solubes 6) 0.05"
+ },
+ "cementoRecomendado": {
+  "valor": null,
+  "pagina": null,
+  "textoLiteral": null
+ },
+ "riesgos": [],
+ "recomendacionesEMS": []
+}

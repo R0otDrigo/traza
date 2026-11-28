@@ -1,0 +1,77 @@
+{
+ "fecha": {
+  "valor": null,
+  "pagina": 132,
+  "textoLiteral": "Fecha: UL."
+ },
+ "calicatas": [
+  {
+   "valor": null,
+   "pagina": 154,
+   "textoLiteral": "CALICATA ci MUESTRA -MT"
+  },
+  {
+   "valor": null,
+   "pagina": 155,
+   "textoLiteral": "CALICATA ca MUESTRA :M1"
+  }
+ ],
+ "perfilE030": {
+  "valor": "S2",
+  "pagina": 132,
+  "textoLiteral": "Tipo de perfil del suelo: s2"
+ },
+ "S_reportadoEMS": {
+  "valor": 1.15,
+  "pagina": 132,
+  "textoLiteral": "Factor del suelo (S): 1.15"
+ },
+ "capacidadPortante_kgcm2": {
+  "valor": null,
+  "pagina": 131,
+  "textoLiteral": "Se obtuvo la presión admisible en zapatas de 1.650 kg/em2"
+ },
+ "Df_m": {
+  "valor": 1.5,
+  "pagina": 132,
+  "textoLiteral": "Profundidad de Cimentación: 1.50m"
+ },
+ "tipoCimentacionRecomendada": {
+  "valor": "Cimentación Superficial",
+  "pagina": 132,
+  "textoLiteral": "Tipo de Cimentación: Cimentación Superficial"
+ },
+ "nivelFreatico_m": {
+  "valor": null,
+  "pagina": 132,
+  "textoLiteral": "Profundidad de la Napa Freática: No existe Napa Freática"
+ },
+ "sulfatos_ppm": {
+  "valor": null,
+  "pagina": 131,
+  "textoLiteral": "cuando este contenido es menor de 1 000 ppm"
+ },
+ "cloruros_ppm": {
+  "valor": null,
+  "pagina": 131,
+  "textoLiteral": "no se encontró nivel freático."
+ },
+ "salesSolubles_ppm": {
+  "valor": null,
+  "pagina": 154,
+  "textoLiteral": "Contenido de Sales Solubos (%) 0.05"
+ },
+ "cementoRecomendado": {
+  "valor": "Portland tipo I o IP",
+  "pagina": 132,
+  "textoLiteral": "se puede utilizarse cemento portland tipo | o IP"
+ },
+ "riesgos": [],
+ "recomendacionesEMS": [
+  {
+   "valor": "se puede utilizarse cemento portland tipo I o IP con recubrimiento mínimo de 7.5em",
+   "pagina": 132,
+   "textoLiteral": "se puede utilizarse cemento portland tipo | o IP con recubrimiento mínimo de 7.5em"
+  }
+ ]
+}
